@@ -1,6 +1,11 @@
 # GroundControl
 The Isaac Sim Extension for Ground Autonomy
 
+## Installing IsaacLab
+
+## Installing GroundControl
+https://isaac-sim.github.io/IsaacLab/source/setup/installation/index.html
+
 ```bash
 conda activate IsaacLab
 git clone git@github.com:UWRobotLearning/GroundControl.git
