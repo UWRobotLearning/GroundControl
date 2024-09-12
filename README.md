@@ -1,6 +1,3 @@
-# GroundControl
-The Isaac Sim Extension for Ground Autonomy
-
 ## Installing IsaacLab
 https://isaac-sim.github.io/IsaacLab/source/setup/installation/index.html
 
