@@ -13,10 +13,12 @@ cd source/extensions
 pip install -e omni.isaac.groundcontrol
 pip install -e omni.isaac.groundcontrol_assets
 pip install -e omni.isaac.groundcontrol_tasks
+```
 
-# Download the Policy and make sure the path is set up correctly in:
+### Download the Policy and make sure the path is set up correctly in:
 https://github.com/UWRobotLearning/GroundControl/blob/425d5c45e2ee17107748571ec5bf12a4d81df53e/source/extensions/omni.isaac.groundcontrol_tasks/omni/isaac/groundcontrol_tasks/manager_based/navigation/config/spot/navigation_env_cfg.py#L54
 
+```bash
 # Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
 python /source/standalone/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
 ```
