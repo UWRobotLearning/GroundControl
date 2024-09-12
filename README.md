@@ -2,6 +2,7 @@
 The Isaac Sim Extension for Ground Autonomy
 
 ```bash
+conda activate IsaacLab
 git clone git@github.com:UWRobotLearning/GroundControl.git
 cd source/extensions
 pip install -e omni.isaac.groundcontrol omni.isaac.groundcontrol_assets omni.isaac.groundcontrol_tasks
