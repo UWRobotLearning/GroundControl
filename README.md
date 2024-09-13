@@ -22,5 +22,5 @@ https://github.com/UWRobotLearning/GroundControl/blob/425d5c45e2ee17107748571ec5
 ### Run Teleop Example
 ```bash
 # Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
-python /source/standalone/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
+python source/standalone/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
 ```
