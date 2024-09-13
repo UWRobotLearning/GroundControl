@@ -26,3 +26,4 @@ __version__ = ISAACLAB_ASSETS_METADATA["package"]["version"]
 # Configuration for different assets.
 ##
 from .spot import *
+from .unitree import *
