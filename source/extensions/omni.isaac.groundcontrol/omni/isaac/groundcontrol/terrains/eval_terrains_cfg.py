@@ -25,5 +25,6 @@ class HfObstacleTerrainCfg(HfTerrainBaseCfg):
     function = eval_terrains.obstacle_terrain
 
     hurdle_height_range: tuple[float, float] = (0.1, 0.1)
+    hurdle_width: float = 0.05
     hurdle_gap: float = 0.5
     inverted: bool = False

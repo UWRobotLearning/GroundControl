@@ -95,10 +95,7 @@ class UnitreeA1RoughEnvCfg_EVAL(LocomotionVelocityEvalEnvCfg):
 
         # make a smaller scene for play
         self.scene.num_envs = 50
-        self.scene.env_spacing = 2.5
-
-        # disable terrain curriculum
-        self.scene.terrain.curriculum = False
+        #self.scene.env_spacing = 2.5
         
         self.scene.robot = UNITREE_A1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/trunk"
@@ -111,17 +108,6 @@ class UnitreeA1RoughEnvCfg_EVAL(LocomotionVelocityEvalEnvCfg):
         self.events.add_base_mass.params["mass_distribution_params"] = (-1.0, 3.0)
         self.events.add_base_mass.params["asset_cfg"].body_names = "trunk"
         self.events.reset_robot_joints.params["position_range"] = (1.0, 1.0)
-        self.events.reset_base.params = {
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
-            "velocity_range": {
-                "x": (0.0, 0.0),
-                "y": (0.0, 0.0),
-                "z": (0.0, 0.0),
-                "roll": (0.0, 0.0),
-                "pitch": (0.0, 0.0),
-                "yaw": (0.0, 0.0),
-            },
-        }
 
         # rewards
         self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
@@ -133,7 +119,7 @@ class UnitreeA1RoughEnvCfg_EVAL(LocomotionVelocityEvalEnvCfg):
         self.rewards.dof_acc_l2.weight = -2.5e-7
 
         # terminations
-        self.terminations.base_contact.params["sensor_cfg"].body_names = "trunk"
+        #self.terminations.base_contact.params["sensor_cfg"].body_names = "trunk"
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False

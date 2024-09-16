@@ -21,22 +21,20 @@ def slope_terrain(difficulty: float, cfg: eval_terrains_cfg.HfSlopeTerrainCfg) -
         The shape of the array is (width, length), where width and length are the number of points
         along the x and y axis, respectively.
     """
-    # resolve terrain configuration
-    if cfg.inverted:
-        slope = -cfg.slope_range[0] - difficulty * (cfg.slope_range[1] - cfg.slope_range[0])
-    else:
-        slope = cfg.slope_range[0] + difficulty * (cfg.slope_range[1] - cfg.slope_range[0])
+    slope = cfg.slope_range[0] + difficulty * (cfg.slope_range[1] - cfg.slope_range[0])
 
     # switch parameters to discrete units
     # -- horizontal scale
     width_pixels = int(cfg.size[0] / cfg.horizontal_scale)
     length_pixels = int(cfg.size[1] / cfg.horizontal_scale)
     # -- height
-    height_max = int(slope * cfg.size[1] / cfg.vertical_scale)
+    height_max = int(slope * cfg.size[0] / cfg.vertical_scale)
 
     # create the height field
-    y = np.linspace(0, height_max, length_pixels)
-    hf_raw = np.tile(y, (width_pixels, 1))
+    y = np.linspace(0, height_max, width_pixels)
+    if cfg.inverted:
+        y = y[::-1]
+    hf_raw = np.tile(y, (length_pixels,1)).T
 
     # round off the heights to the nearest vertical step
     return np.rint(hf_raw).astype(np.int16)
@@ -64,13 +62,15 @@ def obstacle_terrain(difficulty: float, cfg: eval_terrains_cfg.HfObstacleTerrain
     # -- horizontal scale
     width_pixels = int(cfg.size[0] / cfg.horizontal_scale)
     length_pixels = int(cfg.size[1] / cfg.horizontal_scale)
+    hurdle_width_pixels = int(cfg.hurdle_width / cfg.horizontal_scale)
     hurdle_gap_pixels = int(cfg.hurdle_gap / cfg.horizontal_scale)
     # -- height
     hurdle_height_pixels = int(hurdle_height / cfg.vertical_scale)
 
     # create the height field
-    hf_raw = np.zeros((length_pixels, width_pixels), dtype=np.float32)
-    hf_raw[:, hf_raw[1] % hurdle_gap_pixels == 0] = hurdle_height_pixels
+    hf_raw = np.zeros((width_pixels, length_pixels), dtype=np.float32)
+    hurdle_mask = np.arange(width_pixels) % (hurdle_gap_pixels + hurdle_width_pixels) < hurdle_width_pixels
+    hf_raw[hurdle_mask, :] = hurdle_height_pixels
 
     # round off the heights to the nearest vertical step
     return np.rint(hf_raw).astype(np.int16)

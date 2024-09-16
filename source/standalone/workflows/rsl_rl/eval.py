@@ -9,6 +9,7 @@
 
 import argparse
 
+#import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.app import AppLauncher
 
 # local imports
@@ -48,7 +49,7 @@ from omni.isaac.lab.utils.dict import print_dict
 
 import omni.isaac.lab_tasks  # noqa: F401
 from omni.isaac.lab.envs import ManagerBasedRLEnv
-from omni.isaac.lab.terrains import TerrainImporter
+from omni.isaac.lab.scene import InteractiveScene
 from omni.isaac.lab_tasks.utils import get_checkpoint_path, parse_env_cfg
 from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     RslRlOnPolicyRunnerCfg,
@@ -56,7 +57,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     export_policy_as_jit,
     export_policy_as_onnx,
 )
-import omni.isaac.core.utils.prims as prims_utils
+import omni.isaac.core.utils.stage as stage_utils
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
@@ -119,34 +120,42 @@ def main():
     )
 
     print("Evaluation started.")
-    for i, terrain_cfg in enumerate(env_cfg.get_terrain_cfgs()):
-        prims_utils.delete_prim("/World/ground/terrain")
-
-        terrain_cfg.num_envs = env_cfg.scene.num_envs
-        terrain_cfg.env_spacing = env_cfg.scene.env_spacing
+    for i in range(len(env_cfg.terrain_sequence_args)):
+        #print(f"Running terrain: {terrain_cfg.terrain_generator.sub_terrains['eval_terrain'].function.__name__}")
+        #stage_utils.clear_stage(lambda x: True)
+        
         cur_env = env.env
-        cur_env.scene._terrain = TerrainImporter(terrain_cfg)
         
+        # terrain_cfg.num_envs = env_cfg.scene.num_envs
+        # terrain_cfg.env_spacing = env_cfg.scene.env_spacing
+        # env_cfg.scene.terrain = terrain_cfg
+        # cur_env.scene = InteractiveScene(env_cfg.scene)
         
+        num_envs = cur_env.scene.num_envs
         # reset environment
         obs, _ = env.get_observations()
         timestep = 0
-        # simulate environment
-        while cur_env.common_step_counter < cur_env.max_episode_length:
-            # run everything in inference mode
-            with torch.inference_mode():
+        cur_env.scene.terrain.terrain_types[:] = i
+        cur_env.reset()
+        # run everything in inference mode
+        with torch.inference_mode():
+            # simulate environment
+            while timestep < cur_env.max_episode_length:
                 # agent stepping
                 actions = policy(obs)
                 # env stepping
-                obs, _, _, _ = env.step(actions)
-            if args_cli.video:
+                obs, _, _, _  = env.step(actions)
+                #print(cur_env.scene["robot"].data.default_root_state[0, :])
                 timestep += 1
-                # Exit the play loop after recording one video
-                if timestep == args_cli.video_length:
-                    break
+                if args_cli.video:
+                    # Exit the play loop after recording one video
+                    if timestep == args_cli.video_length:
+                        break
 
-        # close the environment
-        env.close()
+            # reset the environment
+            env.reset()
+    # Close the environment (and simulation)
+    env.close()
 
 
 if __name__ == "__main__":
