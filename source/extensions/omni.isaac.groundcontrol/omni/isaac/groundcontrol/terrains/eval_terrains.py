@@ -33,7 +33,7 @@ def slope_terrain(difficulty: float, cfg: eval_terrains_cfg.HfSlopeTerrainCfg) -
     # create the height field
     y = np.linspace(0, height_max, width_pixels)
     if cfg.inverted:
-        y = y[::-1]
+        y *= -1
     hf_raw = np.tile(y, (length_pixels,1)).T
 
     # round off the heights to the nearest vertical step

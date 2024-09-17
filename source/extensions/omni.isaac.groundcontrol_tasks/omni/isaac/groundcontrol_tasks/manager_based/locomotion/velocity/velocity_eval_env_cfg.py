@@ -15,6 +15,7 @@ from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
 # ===== GroundControl imports === VVV
 
 import omni.isaac.groundcontrol.terrains.eval_terrains_cfg as eval_terrains
+import omni.isaac.groundcontrol_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 
 # def eval_terrain_gen(eval_terrain_cfg, static_friction=1.0, dynamic_friction=1.0):
@@ -59,7 +60,7 @@ class LocomotionVelocityEvalEnvCfg(LocomotionVelocityRoughEnvCfg):
         ("up_slope", eval_terrains.HfSlopeTerrainCfg, {}),
         ("down_slope", eval_terrains.HfInvertedSlopeTerrainCfg, {}),
         ("obstacle", eval_terrains.HfObstacleTerrainCfg, {}),
-        ("wave", default_terrains.HfWaveTerrainCfg, {"amplitude_range": (1.0, 1.0)}),
+        ("wave", default_terrains.HfWaveTerrainCfg, {"amplitude_range": (0.1, 0.5)}),
     ]
 
     # def get_terrain_cfgs(self):
@@ -68,11 +69,13 @@ class LocomotionVelocityEvalEnvCfg(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
+        self.episode_length_s = 15.0
+
         self.scene.terrain = TerrainImporterCfg(
             prim_path="/World/ground",
             terrain_type="generator",
             terrain_generator=TerrainGeneratorCfg(
-                size=(80.0, 20.0),
+                size=(20.0, 10.0),
                 border_width=20.0,
                 num_rows=1,
                 num_cols=5,
@@ -103,13 +106,20 @@ class LocomotionVelocityEvalEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.curriculum.terrain_levels = None
 
         # Take commands to be only forward (no lateral/angular velocity), 2 m/s
-        self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
-        self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
-        self.commands.base_velocity.ranges.heading = (0.0, 0.0)
-        self.commands.base_velocity.ranges.lin_vel_x = (2.0, 2.0)
+        # self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        # self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
+        # self.commands.base_velocity.ranges.heading = (0.0, 0.0)
+        # self.commands.base_velocity.ranges.lin_vel_x = (2.0, 2.0)
+
+        self.commands.base_velocity = mdp.GoalVelocityCommandCfg(
+            asset_name="robot",
+            heading_control_stiffness=0.8,
+            debug_vis=True,
+            goal_position=(10.0, 10.0)
+        )
 
         self.events.reset_base.params = {
-            "pose_range": {"x": (-39.5, -39.4), "y": (-0.1, 0.1), "yaw": (-0.0, 0.0)},
+            "pose_range": {"x": (-12.0, -12.0), "y": (-0.1, 0.1), "yaw": (-0.0, 0.0)},
             "velocity_range": {
                 "x": (-0.0, 0.0),
                 "y": (-0.0, 0.0),

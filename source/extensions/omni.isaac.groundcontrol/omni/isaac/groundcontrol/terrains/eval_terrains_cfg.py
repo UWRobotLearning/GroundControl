@@ -9,7 +9,7 @@ class HfSlopeTerrainCfg(HfTerrainBaseCfg):
 
     function = eval_terrains.slope_terrain
 
-    slope_range: tuple[float, float] = (0.5, 0.5)
+    slope_range: tuple[float, float] = (0.3, 0.3)
     inverted: bool = False
 
 @configclass
@@ -25,6 +25,6 @@ class HfObstacleTerrainCfg(HfTerrainBaseCfg):
     function = eval_terrains.obstacle_terrain
 
     hurdle_height_range: tuple[float, float] = (0.1, 0.1)
-    hurdle_width: float = 0.05
-    hurdle_gap: float = 0.5
+    hurdle_width: float = 0.5
+    hurdle_gap: float = 5.0
     inverted: bool = False
