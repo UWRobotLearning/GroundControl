@@ -1,4 +1,5 @@
 # Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2024, The Ground Control Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -51,7 +52,7 @@ class ActionsCfg:
     pre_trained_policy_action: mdp.PreTrainedPolicyActionCfg = mdp.PreTrainedPolicyActionCfg(
         asset_name="robot",
         #TODO: Adjust the path to autofind
-        policy_path="/home/share_act/WRK/GroundControlSPOT/Policies/Spot/Blind/policy.pt",
+        policy_path="/home/share_act/WRK/GroundControl/Policies/Spot/Blind/policy.pt",
         #policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
         low_level_decimation=4,
         low_level_actions=LOW_LEVEL_ENV_CFG.actions.joint_pos,
@@ -72,8 +73,16 @@ class ObservationsCfg:
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
 
+    @configclass
+    class PerceptionCfg(ObsGroup):
+        rgb_camera = ObsTerm(
+            func=mdp.isaac_camera_data,
+            params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
+        )
+        #TODO: note that the camera is now out of PolicyCfg, this is because the policy does not depend on camera atm 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
+    perception: PerceptionCfg = PerceptionCfg()
 
 
 @configclass
