@@ -6,6 +6,7 @@
 
 """This sub-module contains the functions that are specific to the locomotion environments."""
 
+# Some mdp functionality is taken from IsaacLab, for example, these:
 from omni.isaac.lab.envs.mdp import *  # noqa: F401, F403
 
 # ===== NOTE:IsaacLab imports === ^^^ 

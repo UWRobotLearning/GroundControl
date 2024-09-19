@@ -15,10 +15,12 @@ from omni.isaac.lab.managers import SceneEntityCfg
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
+from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 import omni.isaac.groundcontrol_tasks.manager_based.navigation.mdp as mdp
+from omni.isaac.groundcontrol.sensors.camera import CameraCfg
 from omni.isaac.groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.flat_env_cfg import SpotFlatEnvCfg
 
 LOW_LEVEL_ENV_CFG = SpotFlatEnvCfg()
@@ -75,11 +77,17 @@ class ObservationsCfg:
 
     @configclass
     class PerceptionCfg(ObsGroup):
+        concatenate_terms = False
         rgb_camera = ObsTerm(
             func=mdp.isaac_camera_data,
             params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
         )
-        #TODO: note that the camera is now out of PolicyCfg, this is because the policy does not depend on camera atm 
+        #rgb_camera2 = ObsTerm(
+        #    func=mdp.isaac_camera_data,
+        #    params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
+        #)
+        # TODO: add more cameras later
+        # TODO: note that the camera is now out of PolicyCfg, this is because the policy does not depend on camera atm 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
     perception: PerceptionCfg = PerceptionCfg()
@@ -138,9 +146,26 @@ class TerminationsCfg:
     )
 #Note: For Spot, the body name is "body" rather than "base".
 
+# TODO: create a Navigation specific SceneEntityCfg
+#@configclass
+#class NavigationSceneEntityCfg(LOW_LEVEL_ENV_CFG.scene):
+#    rgb_camera = CameraCfg(
+#        prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
+#        update_period=0.1,
+#        height=64,
+#        width=64,
+#        data_types=["rgb"],
+#        spawn=PinholeCameraCfg(),
+#        offset=CameraCfg.OffsetCfg(
+#            pos=(-3.,-.1,.6),
+#            rot=(.46,-.46,.446,.55),
+#        )
+#    )
 
 @configclass
 class NavigationEnvCfg(ManagerBasedRLEnvCfg):
+    # Note: We need to override SceneEntityCfg to have the correct fields to add the camera
+    #scene: SceneEntityCfg = NavigationSceneEntityCfg()
     scene: SceneEntityCfg = LOW_LEVEL_ENV_CFG.scene
     commands: CommandsCfg = CommandsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -165,6 +190,20 @@ class NavigationEnvCfg(ManagerBasedRLEnvCfg):
             )
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
+        # NOTE: for the moment, the camera is added in the post_init of NavigationEnvCfg
+        # We can create a MySceneEntityCfg class for the NavigationEnvCfg as well instead
+        self.scene.rgb_camera = CameraCfg(
+            prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
+            update_period=0.1,
+            height=64,
+            width=64,
+            data_types=["rgb"],
+            spawn=PinholeCameraCfg(),
+            offset=CameraCfg.OffsetCfg(
+                pos=(-0.2,0,0.2),
+                rot=(0.5,-0.5,0.5,-0.5),
+            )
+        )
 
 
 class NavigationEnvCfg_PLAY(NavigationEnvCfg):
@@ -177,3 +216,6 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+
+        # Episode Termination Length
+        self.episode_length_s = 20.0
