@@ -100,7 +100,7 @@ python
 cd ~/projects
 ## In case you don't have it yet, clone git@github.com:mateoguaman/jaxrl.git
 cd ~/projects/jaxrl
-pip install -r requirements.txt 
+pip install -e . 
 
 ## Verify installation
 MUJOCO_GL=egl XLA_PYTHON_CLIENT_PREALLOCATE=false python train_online.py --env_name=HalfCheetah-v4  --start_training 10000 --max_steps 1000000 --config=configs/rlpd_config.py
