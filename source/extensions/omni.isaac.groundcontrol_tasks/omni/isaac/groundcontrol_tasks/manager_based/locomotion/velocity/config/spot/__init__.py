@@ -19,6 +19,7 @@ gym.register(
     kwargs={
         "env_cfg_entry_point": flat_env_cfg.SpotFlatEnvCfg,
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:SpotFlatPPORunnerCfg",
+        "jaxrl_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:SpotFlatPPORunnerCfg"  ## TODO: Replace with JaxRL SAC config
     },
 )
 
