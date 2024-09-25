@@ -20,7 +20,7 @@ from omni.isaac.lab.app import AppLauncher
 import cli_args  # isort: skip
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an RL agent with Stable-Baselines3.")
+parser = argparse.ArgumentParser(description="Train an RL agent with JaxRL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -70,7 +70,57 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
-from jaxrl.agents import SACLearner
+from jaxrl.agents import IQLLearner
+from jaxrl.data import load_replay_buffer
+from typing import Dict, Any, Optional
+import tqdm
+import jax
+import wandb
+import torch
+
+
+## TODO: Put somewhere else
+def flatten_config(cfg: Dict[str, Any], prefix: Optional[str] = '') -> Dict[str, Any]:
+    flat_config = {}
+    for key, value in cfg.items():
+        if prefix is None:
+            new_prefix = None
+            flat_key = key
+        else:
+            new_prefix = f"{prefix}{key}." if prefix else f"{key}."
+            flat_key = new_prefix[:-1]
+        
+        if isinstance(value, dict):
+            flat_config.update(flatten_config(value, new_prefix))
+        else:
+            flat_config[flat_key] = value
+    return flat_config
+
+def to_dict(cfg: Dict[str, Any]) -> Dict[str, Any]:
+    # This function is not needed for regular dictionaries as they are already in dict form
+    # But we'll keep it for consistency, and it can be used for deep copying
+    return {k: v for k, v in cfg.items()}
+
+def get_flat_config(cfg: Dict[str, Any], use_prefix: bool = True) -> Dict[str, Any]:
+    return flatten_config(cfg, '' if use_prefix else None)
+
+def evaluate(
+    agent, env: gym.Env, num_episodes: int, save_video: bool = False
+) -> Dict[str, float]:
+    # if save_video:
+    #     env = WANDBVideo(env, name="eval_video", max_videos=1)
+    # env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=num_episodes)
+    return None
+    for i in range(num_episodes):
+        observation, _ = env.reset()
+        done = False
+        while not done:
+            action = agent.eval_actions(observation)
+            action = torch.from_numpy(action).to(device=env.sim_device, dtype=torch.float32)
+            observation, _, terminated, truncated, info = env.step(action)
+            done = terminated | truncated
+    # return {"return": np.mean(env.return_queue), "length": np.mean(env.length_queue)}
+    return {"return": 0, "length": 0}
 
 
 @hydra_task_config(args_cli.task, "jaxrl_cfg_entry_point")
@@ -105,17 +155,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     if agent_cfg.run_name:
         log_dir += f"_{agent_cfg.run_name}"
     log_dir = os.path.join(log_root_path, log_dir)
-    
-    # dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
-    # dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
-    # dump_pickle(os.path.join(log_dir, "params", "env.pkl"), env_cfg)
-    # dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
 
-    # post-process agent configuration
-    # agent_cfg = process_sb3_cfg(agent_cfg) ## TODO: Add jaxrl specific agent cfg processing
-    # read configurations about the agent-training
-    # policy_arch = agent_cfg.pop("policy")
-    # n_timesteps = agent_cfg.pop("n_timesteps")
+    wandb.init(project="gc_jaxrl")
+    wandb.config.update(agent_cfg.to_dict())
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
@@ -146,10 +188,45 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     #         clip_reward=np.inf,
     #     )
 
-    # create agent from stable baselines
-    agent = SACLearner.create(agent_cfg.seed, env.observation_space, env.action_space) ## TODO: Add the rest of the arguments
     # configure the logger
     ## TODO: Add logger for wandb similar to rsl_rl
+
+    replay_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
+    if agent_cfg.clip_to_eps:
+        lim = 1 - agent_cfg.eps
+        replay_buffer.dataset_dict["actions"].clip(-lim, lim)
+
+    kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
+    class_name = kwargs.pop('class_name')
+
+    # create agent from stable baselines
+    agent = IQLLearner.create(agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
+
+
+    for i in tqdm.tqdm(
+        range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
+    ):
+        batch = replay_buffer.sample(agent_cfg.batch_size)
+        agent, info = agent.update(batch)
+
+        if i % agent_cfg.log_interval == 0:
+            info = jax.device_get(info)
+            # print(info)
+            wandb.log(info, step=i)
+
+        if i % agent_cfg.eval_interval == 0:
+            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
+            # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
+            # for k, v in eval_info.items():
+            #     wandb.log({f"evaluation/{k}": v}, step=i)
+
+        # if i % agent_cfg.save_interval == 0 and i > 0:
+        #     if agent_cfg.checkpoint_model:
+        #         try:
+        #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+        #         except:
+        #             print("Could not save model checkpoint.")
+
 
     # callbacks for agent
     # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir, name_prefix="model", verbose=2)

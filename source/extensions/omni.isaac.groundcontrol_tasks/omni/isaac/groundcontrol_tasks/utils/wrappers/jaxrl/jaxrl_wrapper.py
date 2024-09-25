@@ -30,7 +30,7 @@ from typing import Any
 # from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs, VecEnvStepReturn
 
 from omni.isaac.lab.envs import DirectRLEnv, ManagerBasedRLEnv
-
+from .rescale_action_asymmetric import RescaleActionAsymmetric
 """
 Configuration Parser.
 """
@@ -138,6 +138,9 @@ class JaxrlEnvWrapper(gym.Env):
         self._ep_rew_buf = torch.zeros(self.num_envs, device=self.sim_device)
         self._ep_len_buf = torch.zeros(self.num_envs, device=self.sim_device)
 
+        ## TODO: Support symmetric action scaler as well
+        self.action_scaler = RescaleActionAsymmetric(self.action_space, low=-1, high=1, center_action=np.zeros(self.action_space.shape))
+
     def __str__(self):
         """Returns the wrapper name and the :attr:`env` representation string."""
         return f"<{type(self).__name__}{self.env}>"
@@ -182,8 +185,8 @@ class JaxrlEnvWrapper(gym.Env):
     def seed(self, seed: int | None = None) -> list[int | None]:  # noqa: D102
         return [self.unwrapped.seed(seed)] * self.unwrapped.num_envs
 
-    def reset(self) -> np.ndarray | dict[str, np.ndarray]:  # noqa: D102
-        obs_dict, info = self.env.reset()
+    def reset(self, seed: int | None = None, options: dict[str, Any] | None = None) -> np.ndarray | dict[str, np.ndarray]:  # noqa: D102
+        obs_dict, info = self.env.reset(seed=seed, options=options)
         # reset episodic information buffers
         self._ep_rew_buf.zero_()
         self._ep_len_buf.zero_()
@@ -226,19 +229,19 @@ class JaxrlEnvWrapper(gym.Env):
 
     #     return obs, rew, dones, infos
     
-    def step(self, actions): 
+    def step(self, normalized_actions): 
         # Convert action to unnormalized values
-        ## TODO
+        unnormalized_actions = self.action_scaler.transform_action(normalized_actions, use_torch=torch.is_tensor(normalized_actions))
 
         # Convert actions to tensor
-        if not isinstance(actions, torch.Tensor):
-            actions = np.asarray(actions)
-            actions = torch.from_numpy(actions).to(device=self.sim_device, dtype=torch.float32)
+        if not isinstance(unnormalized_actions, torch.Tensor):
+            unnormalized_actions = np.asarray(unnormalized_actions)
+            unnormalized_actions = torch.from_numpy(unnormalized_actions).to(device=self.sim_device, dtype=torch.float32)
         else:
-            actions = actions.to(device=self.sim_device, dtype=torch.float32)
+            unnormalized_actions = unnormalized_actions.to(device=self.sim_device, dtype=torch.float32)
 
         # Step the environment
-        obs_dict, rew, terminated, truncated, extras = self.env.step(actions)
+        obs_dict, rew, terminated, truncated, extras = self.env.step(unnormalized_actions)
 
         # Update episode un-discounted return and length
         self._ep_rew_buf += rew
