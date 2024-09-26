@@ -151,7 +151,8 @@ class Se2Gamepad(DeviceBase):
 
         # additional callbacks
         if event.input in self._additional_callbacks:
-            self._additional_callbacks[event.input]()
+            if event.value > 0.5: # If button is pressed. < 0.5 is released.
+                self._additional_callbacks[event.input]()
 
         # since no error, we are fine :)
         return True
