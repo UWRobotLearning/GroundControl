@@ -20,11 +20,11 @@ from omni.isaac.lab.app import AppLauncher
 import cli_args  # isort: skip
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an RL agent with JaxRL.")
+parser = argparse.ArgumentParser(description="Train an offline RL agent with JaxRL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
-parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
+parser.add_argument("--num_envs", type=int, default=1, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
@@ -78,7 +78,6 @@ import jax
 import wandb
 import torch
 
-
 ## TODO: Put somewhere else
 def flatten_config(cfg: Dict[str, Any], prefix: Optional[str] = '') -> Dict[str, Any]:
     flat_config = {}
@@ -107,20 +106,20 @@ def get_flat_config(cfg: Dict[str, Any], use_prefix: bool = True) -> Dict[str, A
 def evaluate(
     agent, env: gym.Env, num_episodes: int, save_video: bool = False
 ) -> Dict[str, float]:
-    # if save_video:
-    #     env = WANDBVideo(env, name="eval_video", max_videos=1)
-    # env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=num_episodes)
-    return None
+    return_queue = np.zeros((num_episodes, env.num_envs))
+    length_queue = np.zeros((num_episodes, env.num_envs))
     for i in range(num_episodes):
         observation, _ = env.reset()
-        done = False
-        while not done:
+        done = np.full(env.num_envs, False)
+        while not done.all():
             action = agent.eval_actions(observation)
-            action = torch.from_numpy(action).to(device=env.sim_device, dtype=torch.float32)
-            observation, _, terminated, truncated, info = env.step(action)
-            done = terminated | truncated
-    # return {"return": np.mean(env.return_queue), "length": np.mean(env.length_queue)}
-    return {"return": 0, "length": 0}
+            assert not np.isnan(action).any(), "NaN in action"
+            action = torch.from_numpy(action.copy()).to(device=env.sim_device, dtype=torch.float32)
+            observation, rewards, terminated, truncated, info = env.step(action)
+            done = terminated | truncated | done
+            return_queue[i, ~done] += rewards[~done]
+            length_queue[i, ~done] += 1
+    return {"return": np.mean(return_queue), "length": np.mean(length_queue)}
 
 def get_jaxrl_entry_point(algorithm: str = "bc"):
     if algorithm.lower() == "iql":
@@ -233,8 +232,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         if i % agent_cfg.eval_interval == 0:
             eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
             # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
-            # for k, v in eval_info.items():
-            #     wandb.log({f"evaluation/{k}": v}, step=i)
+            for k, v in eval_info.items():
+                wandb.log({f"evaluation/{k}": v}, step=i)
 
         # if i % agent_cfg.save_interval == 0 and i > 0:
         #     if agent_cfg.checkpoint_model:

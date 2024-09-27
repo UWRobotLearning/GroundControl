@@ -19,8 +19,8 @@ class UnitreeA1FlatIQLRunnerCfg(IQLRunnerConfig):
     experiment_name = "unitree_a1_flat"
     log_interval = 1000
     save_interval = 100000
-    eval_episodes = 10
-    eval_interval = 5000
+    eval_episodes = 1
+    eval_interval = 100000#5000
     checkpoint_model = True
     save_video = True
     video_interval = 1000
