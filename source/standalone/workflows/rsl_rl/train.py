@@ -113,7 +113,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: RslRlOnPolic
     # save resume path before creating a new log_dir
     if agent_cfg.resume:
         # get path to previous checkpoint
-        resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        # resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        resume_path = os.path.abspath("/home/mateo/projects/GroundControl/logs/rsl_rl/unitree_a1_flat/2024-09-12_22-20-40/model_1499.pt")
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
         # load previously trained model
         runner.load(resume_path)
@@ -139,3 +140,21 @@ if __name__ == "__main__":
     main()
     # close sim app
     simulation_app.close()
+
+
+
+'''
+Mateo notes:
+
+To run training on slope from flat from scratch vs finetuning on slope from flat policy, I ran the following commands:
+
+- To run training on flat (which will be the pre-trained policy):
+CUDA_VISIBLE_DEVICES=0 python source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --video --enable_cameras --logger=wandb --headless
+
+- To run training from scratch: 
+CUDA_VISIBLE_DEVICES=0 python source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Slope-Unitree-A1-v0 --video --enable_cameras --logger=wandb --headless
+
+- To run fine-tuning: (note there is a path manually specified set if --resume=True since the code didn't work well if I specified a path from a different repo. Might work after having the dir created)
+CUDA_VISIBLE_DEVICES=0 python source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Slope-Unitree-A1-v0 --video --enable_cameras --logger=wandb --headless  --resume True
+
+'''
