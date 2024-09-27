@@ -6,7 +6,7 @@
 import gymnasium as gym
 
 from . import agents, flat_env_cfg, rough_env_cfg, slope_env_cfg
-
+    
 ##
 # Register Gym environments.
 ##
@@ -19,7 +19,8 @@ gym.register(
         "env_cfg_entry_point": flat_env_cfg.UnitreeA1FlatEnvCfg,
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeA1FlatPPORunnerCfg",
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
-        "jaxrl_cfg_entry_point": f"{agents.__name__}.jaxrl_iql_cfg:UnitreeA1FlatIQLRunnerCfg",
+        "jaxrl_bc_cfg_entry_point": f"{agents.__name__}.jaxrl_bc_cfg:UnitreeA1FlatBCRunnerCfg",
+        "jaxrl_iql_cfg_entry_point": f"{agents.__name__}.jaxrl_iql_cfg:UnitreeA1FlatIQLRunnerCfg",
     },
 )
 

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import RslRlOnPolicyRunnerCfg  ## TODO: Replace PPO config with JaxRL SAC config
+    from typing import Union
     from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import SACRunnerConfig, TD3RunnerConfig, IQLRunnerConfig, BCRunnerConfig
 
 ## TODO: For now, only handle IQL
@@ -45,9 +46,29 @@ def add_jaxrl_args(parser: argparse.ArgumentParser):
     )
     ## TODO: Need to change these to match the configs in the runner policy configs
     arg_group.add_argument("--dataset_path", type=str, default=None, help="Path to the dataset to use for training.")
+    arg_group.add_argument(
+        "--algorithm", type=str, default=None, choices=["iql", "sac", "td3", "bc"], help="Algorithm to use for training."
+    )
 
 
-def parse_jaxrl_cfg(task_name: str, args_cli: argparse.Namespace) -> IQLRunnerConfig:
+# def parse_jaxrl_cfg(task_name: str, args_cli: argparse.Namespace) -> IQLRunnerConfig:
+#     """Parse configuration for JaxRL agent based on inputs.
+
+#     Args:
+#         task_name: The name of the environment.
+#         args_cli: The command line arguments.
+
+#     Returns:
+#         The parsed configuration for RSL-RL agent based on inputs.
+#     """
+#     from omni.isaac.lab_tasks.utils.parse_cfg import load_cfg_from_registry
+
+#     # load the default configuration
+#     jaxrl_cfg: IQLRunnerConfig = load_cfg_from_registry(task_name, "jaxrl_cfg_entry_point")
+#     jaxrl_cfg = update_jaxrl_cfg(jaxrl_cfg, args_cli)
+#     return jaxrl_cfg
+
+def parse_jaxrl_cfg(task_name: str, args_cli: argparse.Namespace) -> Union[IQLRunnerConfig, BCRunnerConfig, SACRunnerConfig, TD3RunnerConfig]:
     """Parse configuration for JaxRL agent based on inputs.
 
     Args:
@@ -55,17 +76,29 @@ def parse_jaxrl_cfg(task_name: str, args_cli: argparse.Namespace) -> IQLRunnerCo
         args_cli: The command line arguments.
 
     Returns:
-        The parsed configuration for RSL-RL agent based on inputs.
+        The parsed configuration for JaxRL agent based on inputs.
     """
     from omni.isaac.lab_tasks.utils.parse_cfg import load_cfg_from_registry
 
-    # load the default configuration
-    jaxrl_cfg: IQLRunnerConfig = load_cfg_from_registry(task_name, "jaxrl_cfg_entry_point")
+    # Determine which configuration to load based on the algorithm
+    if args_cli.algorithm.lower() == "iql":
+        cfg_entry_point = "jaxrl_iql_cfg_entry_point"
+    elif args_cli.algorithm.lower() == "bc":
+        cfg_entry_point = "jaxrl_bc_cfg_entry_point"
+    elif args_cli.algorithm.lower() == "sac":
+        cfg_entry_point = "jaxrl_sac_cfg_entry_point"
+    elif args_cli.algorithm.lower() == "td3":
+        cfg_entry_point = "jaxrl_td3_cfg_entry_point"
+    else:
+        raise ValueError(f"Unknown algorithm: {args_cli.algorithm}")
+
+    # Load the default configuration
+    jaxrl_cfg = load_cfg_from_registry(task_name, cfg_entry_point)
     jaxrl_cfg = update_jaxrl_cfg(jaxrl_cfg, args_cli)
     return jaxrl_cfg
 
 
-def update_jaxrl_cfg(agent_cfg: IQLRunnerConfig, args_cli: argparse.Namespace):
+def update_jaxrl_cfg(agent_cfg: Union[IQLRunnerConfig, BCRunnerConfig, SACRunnerConfig, TD3RunnerConfig], args_cli: argparse.Namespace):
     """Update configuration for JaxRL agent based on inputs.
 
     Args:
@@ -94,5 +127,6 @@ def update_jaxrl_cfg(agent_cfg: IQLRunnerConfig, args_cli: argparse.Namespace):
         agent_cfg.neptune_project = args_cli.log_project_name
     if args_cli.dataset_path is not None:
         agent_cfg.dataset_path = args_cli.dataset_path
+
 
     return agent_cfg

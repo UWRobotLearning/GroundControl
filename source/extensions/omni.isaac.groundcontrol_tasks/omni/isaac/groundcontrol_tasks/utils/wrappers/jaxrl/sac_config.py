@@ -40,7 +40,7 @@ class SACPolicyConfig:
 
 @configclass
 class SACAlgorithmConfig:
-    class_name: str = "sac"
+    algorithm_name: str = "sac"
     actor_lr: float = 3e-4  
     critic_lr: float = 3e-4
     temp_lr: float = 3e-4
@@ -97,7 +97,7 @@ class SACRunnerConfig:
 @configclass
 class REDQRunnerConfig(SACRunnerConfig):
     algorithm: SACAlgorithmConfig = SACAlgorithmConfig(
-        class_name="redq",
+        algorithm_name="redq",
         policy=SACPolicyConfig(
             num_qs=10,  ## This is what makes it REDQ
             num_min_qs=2,  ## This is what makes it REDQ
@@ -108,7 +108,7 @@ class REDQRunnerConfig(SACRunnerConfig):
 @configclass
 class DroQRunnerConfig(SACRunnerConfig):
     algorithm: SACAlgorithmConfig = SACAlgorithmConfig(
-        class_name="droq",
+        algorithm_name="droq",
         init_temperature=0.1,
         policy=SACPolicyConfig(
             critic_dropout_rate=0.01,  ## This is what makes it DroQ

@@ -41,7 +41,7 @@ class IQLPolicyConfig:
 
 @configclass
 class IQLAlgorithmConfig:
-    class_name: str = "iql"
+    algorithm_name: str = "iql"
     actor_lr: float = 1e-3
     critic_lr: float = 3e-4
     value_lr: float = 3e-4
@@ -83,6 +83,9 @@ class IQLRunnerConfig:
     filter_threshold: Optional[float] = None
     clip_to_eps: bool = True  ## Replace [-1, 1] with [-1-eps, 1+eps] in dataset
     eps: float = 1e-5
+    
+    max_iterations: int = int(1e6)
+    batch_size: int = 256
 
     resume: bool = MISSING
     load_run: str = MISSING
@@ -92,8 +95,6 @@ class IQLRunnerConfig:
     wandb_project: str = MISSING
     neptune_project: str = MISSING
 
-    max_iterations: int = int(1e6)
-    batch_size: int = 256
 
     # def get_flat_config(self, use_prefix: bool = True) -> Dict[str, Any]:
     #     return flatten_config_dataclass(self, '' if use_prefix else None)

@@ -9,13 +9,13 @@ from omni.isaac.lab.utils import configclass
 # ===== GroundControl imports === VVV
 
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import (
-    IQLRunnerConfig,
-    IQLPolicyConfig,
-    IQLAlgorithmConfig,
+    BCRunnerConfig,
+    BCPolicyConfig,
+    BCAlgorithmConfig,
 )
 
 @configclass
-class UnitreeA1FlatIQLRunnerCfg(IQLRunnerConfig):
+class UnitreeA1FlatBCRunnerCfg(BCRunnerConfig):
     experiment_name = "unitree_a1_flat"
     log_interval = 1000
     save_interval = 100000
@@ -27,27 +27,15 @@ class UnitreeA1FlatIQLRunnerCfg(IQLRunnerConfig):
     max_iterations = int(1e6)
     batch_size = 256
 
-    algorithm = IQLAlgorithmConfig(
-        actor_lr = 1e-3,
-        critic_lr = 3e-4,
-        value_lr = 3e-4,
-        discount = 0.99,
-        tau = 0.005,
-        expectile = 0.8,
-        temperature = 0.1,
-        policy = IQLPolicyConfig(
+    algorithm = BCAlgorithmConfig(
+        actor_lr = 3e-4,
+        warmup_steps = 1000,
+        decay_steps = 1000000,
+        weight_decay = None,
+        distr = "normal",
+        policy = BCPolicyConfig(
             hidden_dims = (128, 128, 128),
-            actor_weight_decay = None,
-            critic_weight_decay = None,
-            value_weight_decay = None,
-            critic_layer_norm = False,
-            value_layer_norm = False,
-            num_qs = 2,
-            num_min_qs = None,
-            num_vs = 1,
-            num_min_vs = None,
-            use_tanh_normal = False,
-            state_dependent_std = False,
+            dropout_rate = None,
         )
     )
 

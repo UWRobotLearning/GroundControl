@@ -70,7 +70,7 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
-from jaxrl.agents import IQLLearner
+from jaxrl.agents import IQLLearner, BCLearner
 from jaxrl.data import load_replay_buffer
 from typing import Dict, Any, Optional
 import tqdm
@@ -122,8 +122,24 @@ def evaluate(
     # return {"return": np.mean(env.return_queue), "length": np.mean(env.length_queue)}
     return {"return": 0, "length": 0}
 
+def get_jaxrl_entry_point(algorithm: str = "bc"):
+    if algorithm.lower() == "iql":
+        return "jaxrl_iql_cfg_entry_point"
+    elif algorithm.lower() == "bc":
+        return "jaxrl_bc_cfg_entry_point"
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm}")
 
-@hydra_task_config(args_cli.task, "jaxrl_cfg_entry_point")
+def get_learner(learner_name: str, seed: int, observation_space, action_space, **kwargs):
+    if learner_name.lower() == "iql":
+        return IQLLearner.create(seed, observation_space, action_space, **kwargs)
+    elif learner_name.lower() == "bc":
+        return BCLearner.create(seed, observation_space, action_space, **kwargs)
+    else:
+        raise ValueError(f"Unknown learner: {learner_name}")
+
+# @hydra_task_config(args_cli.task, "jaxrl_cfg_entry_point")
+@hydra_task_config(args_cli.task, get_jaxrl_entry_point(args_cli.algorithm))
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     """Train with JaxRL agent."""
     # override configurations with non-hydra CLI arguments
@@ -197,10 +213,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         replay_buffer.dataset_dict["actions"].clip(-lim, lim)
 
     kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
-    class_name = kwargs.pop('class_name')
+    algorithm_name = kwargs.pop('algorithm_name', 'bc')  # Default to BC if not specified
 
     # create agent from stable baselines
-    agent = IQLLearner.create(agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
+    agent = get_learner(algorithm_name, agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
 
 
     for i in tqdm.tqdm(

@@ -30,7 +30,7 @@ class TD3PolicyConfig:
 
 @configclass
 class TD3AlgorithmConfig:
-    class_name: str = "td3"
+    algorithm_name: str = "td3"
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
     discount: float = 0.99
