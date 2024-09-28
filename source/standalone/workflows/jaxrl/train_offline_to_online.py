@@ -20,7 +20,7 @@ from omni.isaac.lab.app import AppLauncher
 import cli_args  # isort: skip
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an online RL agent with JaxRL.")
+parser = argparse.ArgumentParser(description="Train an offline RL agent with JaxRL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -52,6 +52,7 @@ import numpy as np
 import os
 from datetime import datetime
 
+
 from omni.isaac.lab.envs import (
     DirectRLEnvCfg,
     ManagerBasedRLEnvCfg,)
@@ -65,8 +66,8 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
-from jaxrl.agents import SACLearner, TD3Learner
-from jaxrl.data import ReplayBuffer, load_replay_buffer
+from jaxrl.agents import IQLLearner
+from jaxrl.data import load_replay_buffer, ReplayBuffer
 from typing import Dict, Any, Optional
 import tqdm
 import jax
@@ -109,32 +110,103 @@ def evaluate(
         while not done.all():
             action = agent.eval_actions(observation)
             assert not np.isnan(action).any(), "NaN in action"
-            # action = torch.from_numpy(action.copy()).to(device=env.sim_device, dtype=torch.float32)
             observation, rewards, terminated, truncated, info = env.step(action)
             done = terminated | truncated | done
             return_queue[i, ~done] += rewards[~done]
             length_queue[i, ~done] += 1
     return {"return": np.mean(return_queue), "length": np.mean(length_queue)}
 
-def get_jaxrl_entry_point(algorithm: str = "sac"):
-    if algorithm.lower() == "sac":
-        return "jaxrl_sac_cfg_entry_point"
-    elif algorithm.lower() == "redq":
-        return "jaxrl_redq_cfg_entry_point"
-    elif algorithm.lower() == "droq":
-        return "jaxrl_droq_cfg_entry_point"
-    elif algorithm.lower() == "td3":
-        return "jaxrl_td3_cfg_entry_point"
+def get_jaxrl_entry_point(algorithm: str = "iql"):
+    if algorithm.lower() == "iql":
+        return "jaxrl_iql_cfg_entry_point"
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 
 def get_learner(learner_name: str, seed: int, observation_space, action_space, **kwargs):
-    if (learner_name.lower() == "sac") or (learner_name.lower() == "redq") or (learner_name.lower() == "droq"):
-        return SACLearner.create(seed, observation_space, action_space, **kwargs)
-    elif learner_name.lower() == "td3":
-        return TD3Learner.create(seed, observation_space, action_space, **kwargs)
+    if learner_name.lower() == "iql":
+        return IQLLearner.create(seed, observation_space, action_space, **kwargs)
     else:
         raise ValueError(f"Unknown learner: {learner_name}")
+    
+
+'''
+For reference:
+
+class ReplayBuffer(Dataset):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        action_space: gym.Space,
+        capacity: int,
+        next_observation_space: Optional[gym.Space] = None,
+    ):
+        if next_observation_space is None:
+            next_observation_space = observation_space
+
+        observation_data = _init_replay_dict(observation_space, capacity)
+        next_observation_data = _init_replay_dict(next_observation_space, capacity)
+        dataset_dict = dict(
+            observations=observation_data,
+            next_observations=next_observation_data,
+            actions=np.empty((capacity, *action_space.shape), dtype=action_space.dtype),
+            rewards=np.empty((capacity,), dtype=np.float32),
+            masks=np.empty((capacity,), dtype=np.float32),
+            dones=np.empty((capacity,), dtype=bool),
+        )
+
+        super().__init__(dataset_dict)
+
+        self._size = 0
+        self._capacity = capacity
+        self._insert_index = 0
+
+    def __len__(self) -> int:
+        return self._size
+
+    def insert(self, data_dict: DatasetDict):
+        _insert_recursively(self.dataset_dict, data_dict, self._insert_index)
+
+        self._insert_index = (self._insert_index + 1) % self._capacity
+        self._size = min(self._size + 1, self._capacity)
+
+    def get_iterator(self, queue_size: int = 2, sample_args: dict = {}):
+        # See https://flax.readthedocs.io/en/latest/_modules/flax/jax_utils.html#prefetch_to_device
+        # queue_size = 2 should be ok for one GPU.
+
+        queue = collections.deque()
+
+        def enqueue(n):
+            for _ in range(n):
+                data = self.sample(**sample_args)
+                queue.append(jax.device_put(data))
+
+        enqueue(queue_size)
+        while queue:
+            yield queue.popleft()
+            enqueue(1)
+'''
+def expand_buffer_capacity(replay_buffer, new_buffer_capacity, observation_space, action_space):
+    """Expand the buffer capacity to new_buffer_capacity"""
+    assert replay_buffer._capacity <= new_buffer_capacity, "Buffer capacity is already greater than or equal to new_buffer_capacity"
+
+    expanded_replay_buffer = ReplayBuffer(
+        observation_space,
+        action_space,
+        new_buffer_capacity,
+        observation_space,
+    )
+
+    expanded_replay_buffer.dataset_dict["observations"][:replay_buffer._size] = replay_buffer.dataset_dict["observations"]
+    expanded_replay_buffer.dataset_dict["next_observations"][:replay_buffer._size] = replay_buffer.dataset_dict["next_observations"]
+    expanded_replay_buffer.dataset_dict["actions"][:replay_buffer._size] = replay_buffer.dataset_dict["actions"]
+    expanded_replay_buffer.dataset_dict["rewards"][:replay_buffer._size] = replay_buffer.dataset_dict["rewards"]
+    expanded_replay_buffer.dataset_dict["masks"][:replay_buffer._size] = replay_buffer.dataset_dict["masks"]
+    expanded_replay_buffer.dataset_dict["dones"][:replay_buffer._size] = replay_buffer.dataset_dict["dones"]
+
+    expanded_replay_buffer._size = replay_buffer._size
+    expanded_replay_buffer._insert_index = replay_buffer._size
+
+    return expanded_replay_buffer
 
 @hydra_task_config(args_cli.task, get_jaxrl_entry_point(args_cli.algorithm))
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
@@ -146,7 +218,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
     )
 
-    assert args_cli.num_envs == 1, "num_envs must be 1 for online training. Parallel environments not supported yet."
+    assert args_cli.num_envs == 1, "num_envs must be 1 for JaxRL offline to online training"
 
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
@@ -197,120 +269,88 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     # configure the logger
     ## TODO: Add logger for wandb similar to rsl_rl
 
-    ## TODO: Add function to initialize with an existing replay buffer.
-    # replay_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
-    # if agent_cfg.clip_to_eps:
-    #     lim = 1 - agent_cfg.eps
-    #     replay_buffer.dataset_dict["actions"].clip(-lim, lim)
-    replay_buffer = ReplayBuffer(
-        env.observation_space, env.action_space, agent_cfg.max_iterations
-    )
-    replay_buffer.seed(agent_cfg.seed)
+    replay_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
+    if agent_cfg.clip_to_eps:
+        lim = 1 - agent_cfg.eps
+        replay_buffer.dataset_dict["actions"].clip(-lim, lim)
+
+    ## TODO: Choice of buffer size can be either agent_cfg.replay_buffer_size or agent_cfg.num_pretraining_steps + agent_cfg.max_iterations
+    replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.num_pretraining_steps + agent_cfg.max_iterations, obs_space, action_space)
+    # replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.replay_buffer_size, obs_space, action_space)
 
     kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
-    algorithm_name = kwargs.pop('algorithm_name', 'sac')  # Default to SAC if not specified
+    algorithm_name = kwargs.pop('algorithm_name', 'iql')  # Default to BC if not specified
 
     # create agent from stable baselines
     agent = get_learner(algorithm_name, agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
 
-
     observation, _ = env.reset()
-    # done = np.full(env.num_envs, False)
     done = False
+    # for i in tqdm.tqdm(
+    #     range(1 - agent_cfg.num_pretraining_steps, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
+    # ):
     for i in tqdm.tqdm(
-        range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
+        range(1,  agent_cfg.num_pretraining_steps + agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
     ):
-        if i < agent_cfg.start_training:
-            unnormalized_action = env.full_action_space.sample()
-            normalized_action = env.action_scaler.inverse_transform_action(unnormalized_action, use_torch=False)
-        else:
+        # if i > 1:
+        if i > agent_cfg.num_pretraining_steps:
+            ## Online training
             normalized_action, agent = agent.sample_actions(observation)
-        next_observation, reward, terminated, truncated, info = env.step(normalized_action)
-        # done = terminated or truncated
-        done = terminated | truncated
+            if agent_cfg.clip_to_eps:
+                lim = 1 - agent_cfg.eps
+                normalized_action.clip(-lim, lim)
+            next_observation, reward, terminated, truncated, info = env.step(normalized_action)
+            done = terminated | truncated
 
-        if not terminated:
-            mask = 1.0
-        else:
-            mask = 0.0
+            if not terminated:
+                mask = 1.0
+            else:
+                mask = 0.0
 
-        if env.num_envs == 1:
-            replay_buffer.insert(
-                dict(
+            if env.num_envs == 1:
+                replay_buffer.insert(
+                    dict(
                     observations=observation.squeeze(),
                     actions=normalized_action.squeeze(),
                     rewards=reward.squeeze(),
                     masks=mask,
                     dones=done,
                     next_observations=next_observation.squeeze(),
-                )
-            ),
-        else:
-            raise NotImplementedError("Parallel environments not supported yet.")
-        observation = next_observation
+                    )
+                ),
+            else:
+                raise NotImplementedError("Parallel environments not supported yet.")
+            observation = next_observation
 
-        if done:
-            observation, _ = env.reset()
-            done = False
-            for k, v in info[0]["episode"].items():
-                decode = {"r": "return", "l": "length", "t": "time"}
-                if k in decode:
-                    metric = f"training/{decode[k]}"
-                else:
-                    metric = k
-                wandb.log({metric: v}, step=i)
+            if done:
+                observation, _ = env.reset()
+                done = False
+                for k, v in info[0]["episode"].items():
+                    decode = {"r": "return", "l": "length", "t": "time"}
+                    if k in decode:
+                        metric = f"training/{decode[k]}"
+                    else:
+                        metric = k
+                    wandb.log({metric: v}, step=i)
 
-        if i >= agent_cfg.start_training:
-            batch = replay_buffer.sample(int(agent_cfg.batch_size * agent_cfg.utd_ratio))
-            agent, update_info = agent.update(batch, utd_ratio=agent_cfg.utd_ratio)
+        batch = replay_buffer.sample(agent_cfg.batch_size)
+        agent, info = agent.update(batch)
 
-
+        if i % agent_cfg.log_interval == 0:
+            info = jax.device_get(info)
+            wandb.log(info, step=i)
 
         if i % agent_cfg.eval_interval == 0:
-            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes, save_video=agent_cfg.save_video)
+            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
             for k, v in eval_info.items():
                 wandb.log({f"evaluation/{k}": v}, step=i)
 
-    #     if i % agent_cfg.save_interval == 0 and i > 0:
-    #         if agent_cfg.checkpoint_model:
-    #             try:
-    #                 checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-    #             except:
-    #                 print("Could not save model checkpoint.")
-
-    #         if cfg.checkpoint_buffer:
-    #             try:
-    #                 save_replay_buffer(replay_buffer, os.path.join(buffer_dir, f"buffer_{i}"), env.observation_space, env.action_space)
-    #             except:
-    #                 print("Could not save agent buffer.")
-    # checkpoint_manager.wait_until_finished()
-
-
-
-
-    # for i in tqdm.tqdm(
-    #     range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
-    # ):
-    #     batch = replay_buffer.sample(agent_cfg.batch_size)
-    #     agent, info = agent.update(batch)
-
-    #     if i % agent_cfg.log_interval == 0:
-    #         info = jax.device_get(info)
-    #         # print(info)
-    #         wandb.log(info, step=i)
-
-    #     if i % agent_cfg.eval_interval == 0:
-    #         eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
-    #         # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
-    #         for k, v in eval_info.items():
-    #             wandb.log({f"evaluation/{k}": v}, step=i)
-
-    #     # if i % agent_cfg.save_interval == 0 and i > 0:
-    #     #     if agent_cfg.checkpoint_model:
-    #     #         try:
-    #     #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-    #     #         except:
-    #     #             print("Could not save model checkpoint.")
+        # if i % agent_cfg.save_interval == 0 and i > 0:
+        #     if agent_cfg.checkpoint_model:
+        #         try:
+        #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+        #         except:
+        #             print("Could not save model checkpoint.")
 
 
     # callbacks for agent

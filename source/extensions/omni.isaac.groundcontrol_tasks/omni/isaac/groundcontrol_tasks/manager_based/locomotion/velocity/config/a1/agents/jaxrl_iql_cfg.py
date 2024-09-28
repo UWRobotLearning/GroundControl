@@ -17,15 +17,19 @@ from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import (
 @configclass
 class UnitreeA1FlatIQLRunnerCfg(IQLRunnerConfig):
     experiment_name = "unitree_a1_flat"
-    log_interval = 1000
-    save_interval = 100000
+    log_interval = 1_000
+    save_interval = 100_000
     eval_episodes = 1
-    eval_interval = 10000#5000
+    eval_interval = 100_000
     checkpoint_model = True
     save_video = True
-    video_interval = 1000
+    video_interval = 1_000
     max_iterations = int(1e6)
     batch_size = 256
+
+    ## Only used for offline to online
+    num_pretraining_steps = 1_000_000
+    replay_buffer_size = 2_000_000
 
     algorithm = IQLAlgorithmConfig(
         actor_lr = 1e-3,

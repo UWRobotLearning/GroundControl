@@ -173,3 +173,10 @@ CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standal
 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_hybrid.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm rlpd_droq --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --video
 ```
 
+## Running offline to online with IQL
+
+To run offline to online with IQL, run:
+```bash
+# To avoid rendering, add --headless. Change dataset_path to your own.
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_offline_to_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --algorithm iql --video
+```

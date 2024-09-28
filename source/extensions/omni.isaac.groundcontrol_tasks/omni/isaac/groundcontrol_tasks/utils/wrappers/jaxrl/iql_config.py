@@ -95,6 +95,9 @@ class IQLRunnerConfig:
     wandb_project: str = MISSING
     neptune_project: str = MISSING
 
+    num_pretraining_steps: int = MISSING  ## Used for offline to online
+    replay_buffer_size: int = MISSING  ## Used for offline to online
+
 
     # def get_flat_config(self, use_prefix: bool = True) -> Dict[str, Any]:
     #     return flatten_config_dataclass(self, '' if use_prefix else None)
