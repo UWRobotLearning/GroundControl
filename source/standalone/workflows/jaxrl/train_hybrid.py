@@ -20,7 +20,7 @@ from omni.isaac.lab.app import AppLauncher
 import cli_args  # isort: skip
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an offline RL agent with JaxRL.")
+parser = argparse.ArgumentParser(description="Train an online RL agent with JaxRL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -52,7 +52,6 @@ import numpy as np
 import os
 from datetime import datetime
 
-
 from omni.isaac.lab.envs import (
     DirectRLEnvCfg,
     ManagerBasedRLEnvCfg,)
@@ -66,8 +65,8 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
-from jaxrl.agents import IQLLearner, BCLearner
-from jaxrl.data import load_replay_buffer
+from jaxrl.agents import SACLearner
+from jaxrl.data import ReplayBuffer, load_replay_buffer
 from typing import Dict, Any, Optional
 import tqdm
 import jax
@@ -99,6 +98,25 @@ def to_dict(cfg: Dict[str, Any]) -> Dict[str, Any]:
 def get_flat_config(cfg: Dict[str, Any], use_prefix: bool = True) -> Dict[str, Any]:
     return flatten_config(cfg, '' if use_prefix else None)
 
+def combine(one_dict, other_dict):
+    combined = {}
+
+    for k, v in one_dict.items():
+        # if k == "observation_labels":
+        #     combined[k] = v
+        #     continue
+        if isinstance(v, dict):
+            combined[k] = combine(v, other_dict[k])
+        else:
+            tmp = np.empty(
+                (v.shape[0] + other_dict[k].shape[0], *v.shape[1:]), dtype=v.dtype
+            )
+            tmp[0:v.shape[0]] = v
+            tmp[v.shape[0]:] = other_dict[k]
+            combined[k] = tmp
+
+    return combined
+
 def evaluate(
     agent, env: gym.Env, num_episodes: int, save_video: bool = False
 ) -> Dict[str, float]:
@@ -110,25 +128,26 @@ def evaluate(
         while not done.all():
             action = agent.eval_actions(observation)
             assert not np.isnan(action).any(), "NaN in action"
+            # action = torch.from_numpy(action.copy()).to(device=env.sim_device, dtype=torch.float32)
             observation, rewards, terminated, truncated, info = env.step(action)
             done = terminated | truncated | done
             return_queue[i, ~done] += rewards[~done]
             length_queue[i, ~done] += 1
     return {"return": np.mean(return_queue), "length": np.mean(length_queue)}
 
-def get_jaxrl_entry_point(algorithm: str = "bc"):
-    if algorithm.lower() == "iql":
-        return "jaxrl_iql_cfg_entry_point"
-    elif algorithm.lower() == "bc":
-        return "jaxrl_bc_cfg_entry_point"
+def get_jaxrl_entry_point(algorithm: str = "rlpd_redq"):
+    if algorithm.lower() == "rlpd_sac":
+        return "jaxrl_rlpd_sac_cfg_entry_point"
+    elif algorithm.lower() == "rlpd_redq":
+        return "jaxrl_rlpd_redq_cfg_entry_point"
+    elif algorithm.lower() == "rlpd_droq":
+        return "jaxrl_rlpd_droq_cfg_entry_point"
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 
 def get_learner(learner_name: str, seed: int, observation_space, action_space, **kwargs):
-    if learner_name.lower() == "iql":
-        return IQLLearner.create(seed, observation_space, action_space, **kwargs)
-    elif learner_name.lower() == "bc":
-        return BCLearner.create(seed, observation_space, action_space, **kwargs)
+    if (learner_name.lower() == "rlpd_sac") or (learner_name.lower() == "rlpd_redq") or (learner_name.lower() == "rlpd_droq"):
+        return SACLearner.create(seed, observation_space, action_space, **kwargs)
     else:
         raise ValueError(f"Unknown learner: {learner_name}")
 
@@ -142,9 +161,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
     )
 
+    assert args_cli.num_envs == 1, "num_envs must be 1 for online training. Parallel environments not supported yet."
+
+    # agent_cfg["seed"] = args_cli.seed if args_cli.seed is not None else agent_cfg["seed"]
+    # # max iterations for training
+    # if args_cli.max_iterations is not None:
+    #     agent_cfg["n_timesteps"] = args_cli.max_iterations * agent_cfg["n_steps"] * env_cfg.scene.num_envs
+
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
-    env_cfg.seed = args_cli.seed
+    # env_cfg.seed = agent_cfg["seed"]
+
+    # directory for logging into
+    # log_dir = os.path.join("logs", "jaxrl", args_cli.task, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))  ## TODO: Add algorithm to the log dir
+    # dump the configuration into log-directory  ## TODO: Change the way these are saved if needed.
     
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "jaxrl", agent_cfg.algorithm.algorithm_name, agent_cfg.experiment_name)
@@ -191,41 +221,126 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     # configure the logger
     ## TODO: Add logger for wandb similar to rsl_rl
 
-    replay_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
-    if agent_cfg.clip_to_eps:
-        lim = 1 - agent_cfg.eps
-        replay_buffer.dataset_dict["actions"].clip(-lim, lim)
+    offline_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
+    # if agent_cfg.clip_to_eps:
+    #     lim = 1 - agent_cfg.eps
+    #     offline_buffer.dataset_dict["actions"].clip(-lim, lim)
+
+    online_buffer = ReplayBuffer(
+        env.observation_space, env.action_space, agent_cfg.max_iterations
+    )
+    online_buffer.seed(agent_cfg.seed)
 
     kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
-    algorithm_name = kwargs.pop('algorithm_name', 'bc')  # Default to BC if not specified
+    algorithm_name = kwargs.pop('algorithm_name', 'rlpd_redq')  # Default to SAC if not specified
 
     # create agent from stable baselines
     agent = get_learner(algorithm_name, agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
 
 
+    observation, _ = env.reset()
+    # done = np.full(env.num_envs, False)
+    done = False
     for i in tqdm.tqdm(
         range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
     ):
-        batch = replay_buffer.sample(agent_cfg.batch_size)
-        agent, info = agent.update(batch)
+        if i < agent_cfg.start_training:
+            unnormalized_action = env.full_action_space.sample()
+            normalized_action = env.action_scaler.inverse_transform_action(unnormalized_action, use_torch=False)
+        else:
+            normalized_action, agent = agent.sample_actions(observation)
+        next_observation, reward, terminated, truncated, info = env.step(normalized_action)
+        # done = terminated or truncated
+        done = terminated | truncated
 
-        if i % agent_cfg.log_interval == 0:
-            info = jax.device_get(info)
-            # print(info)
-            wandb.log(info, step=i)
+        if not terminated:
+            mask = 1.0
+        else:
+            mask = 0.0
+
+        if env.num_envs == 1:
+            online_buffer.insert(
+                dict(
+                    observations=observation.squeeze(),
+                    actions=normalized_action.squeeze(),
+                    rewards=reward.squeeze(),
+                    masks=mask,
+                    dones=done,
+                    next_observations=next_observation.squeeze(),
+                )
+            )
+        else:
+            raise NotImplementedError("Parallel environments not supported yet.")
+        observation = next_observation
+
+        if done:
+            observation, _ = env.reset()
+            done = False
+            for k, v in info[0]["episode"].items():
+                decode = {"r": "return", "l": "length", "t": "time"}
+                if k in decode:
+                    metric = f"training/{decode[k]}"
+                else:
+                    metric = k  
+                wandb.log({metric: v}, step=i)
+
+        if i >= agent_cfg.start_training:
+            online_batch = online_buffer.sample(
+                int(agent_cfg.batch_size * agent_cfg.utd_ratio * (1 - agent_cfg.offline_ratio))
+            )
+            offline_batch = offline_buffer.sample(
+                int(agent_cfg.batch_size * agent_cfg.utd_ratio * agent_cfg.offline_ratio)
+            )
+
+            batch = combine(offline_batch, online_batch)
+            agent, update_info = agent.update(batch, utd_ratio=agent_cfg.utd_ratio)
+
 
         if i % agent_cfg.eval_interval == 0:
-            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
-            # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
+            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes, save_video=agent_cfg.save_video)
             for k, v in eval_info.items():
                 wandb.log({f"evaluation/{k}": v}, step=i)
 
-        # if i % agent_cfg.save_interval == 0 and i > 0:
-        #     if agent_cfg.checkpoint_model:
-        #         try:
-        #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-        #         except:
-        #             print("Could not save model checkpoint.")
+    #     if i % agent_cfg.save_interval == 0 and i > 0:
+    #         if agent_cfg.checkpoint_model:
+    #             try:
+    #                 checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+    #             except:
+    #                 print("Could not save model checkpoint.")
+
+    #         if cfg.checkpoint_buffer:
+    #             try:
+    #                 save_replay_buffer(replay_buffer, os.path.join(buffer_dir, f"buffer_{i}"), env.observation_space, env.action_space)
+    #             except:
+    #                 print("Could not save agent buffer.")
+    # checkpoint_manager.wait_until_finished()
+
+
+
+
+    # for i in tqdm.tqdm(
+    #     range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
+    # ):
+    #     batch = replay_buffer.sample(agent_cfg.batch_size)
+    #     agent, info = agent.update(batch)
+
+    #     if i % agent_cfg.log_interval == 0:
+    #         info = jax.device_get(info)
+    #         # print(info)
+    #         wandb.log(info, step=i)
+
+    #     if i % agent_cfg.eval_interval == 0:
+    #         eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
+    #         # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
+    #         for k, v in eval_info.items():
+    #             wandb.log({f"evaluation/{k}": v}, step=i)
+
+    #     # if i % agent_cfg.save_interval == 0 and i > 0:
+    #     #     if agent_cfg.checkpoint_model:
+    #     #         try:
+    #     #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+    #     #         except:
+    #     #             print("Could not save model checkpoint.")
 
 
     # callbacks for agent

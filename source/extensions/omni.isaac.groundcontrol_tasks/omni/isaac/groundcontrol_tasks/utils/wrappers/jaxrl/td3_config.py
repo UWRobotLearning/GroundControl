@@ -54,7 +54,7 @@ class TD3RunnerConfig:
     algorithm: TD3AlgorithmConfig = TD3AlgorithmConfig()
 
     seed: int = 42
-    env_name: str = "HalfCheetah-v4"
+    env_name: str = MISSING #"HalfCheetah-v4"
     experiment_name: str = "td3"  # Used for wandb and project folder logging
     run_name: Optional[str] = None  # If not None, used to save logs in dir date_run_name
     save_dir: str = "checkpoints"

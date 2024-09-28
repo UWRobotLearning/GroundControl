@@ -136,7 +136,6 @@ def get_learner(learner_name: str, seed: int, observation_space, action_space, *
     else:
         raise ValueError(f"Unknown learner: {learner_name}")
 
-# @hydra_task_config(args_cli.task, "jaxrl_cfg_entry_point")
 @hydra_task_config(args_cli.task, get_jaxrl_entry_point(args_cli.algorithm))
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     """Train with JaxRL agent."""
@@ -149,18 +148,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
 
     assert args_cli.num_envs == 1, "num_envs must be 1 for online training. Parallel environments not supported yet."
 
-    # agent_cfg["seed"] = args_cli.seed if args_cli.seed is not None else agent_cfg["seed"]
-    # # max iterations for training
-    # if args_cli.max_iterations is not None:
-    #     agent_cfg["n_timesteps"] = args_cli.max_iterations * agent_cfg["n_steps"] * env_cfg.scene.num_envs
-
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
-    # env_cfg.seed = agent_cfg["seed"]
-
-    # directory for logging into
-    # log_dir = os.path.join("logs", "jaxrl", args_cli.task, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))  ## TODO: Add algorithm to the log dir
-    # dump the configuration into log-directory  ## TODO: Change the way these are saved if needed.
+    env_cfg.seed = args_cli.seed
     
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "jaxrl", agent_cfg.algorithm.algorithm_name, agent_cfg.experiment_name)
@@ -269,8 +259,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
                 wandb.log({metric: v}, step=i)
 
         if i >= agent_cfg.start_training:
-            batch = replay_buffer.sample(agent_cfg.batch_size)
-            agent, update_info = agent.update(batch, utd_ratio=1)
+            batch = replay_buffer.sample(int(agent_cfg.batch_size * agent_cfg.utd_ratio))
+            agent, update_info = agent.update(batch, utd_ratio=agent_cfg.utd_ratio)
+
 
 
         if i % agent_cfg.eval_interval == 0:

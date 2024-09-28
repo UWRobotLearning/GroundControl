@@ -26,6 +26,19 @@ def add_jaxrl_args(parser: argparse.ArgumentParser):
     Args:
         parser: The parser to add the arguments to.
     """
+    ALGORITHM_CHOICES = [
+        "iql",
+        "sac",
+        "td3",
+        "bc",
+        "redq",
+        "droq",
+        "rlpd_sac",
+        "rlpd_redq",
+        "rlpd_droq",
+        # Add more algorithms here
+    ]
+
     # create a new argument group
     arg_group = parser.add_argument_group("jaxrl", description="Arguments for JaxRL agent.")
     # -- experiment arguments
@@ -47,7 +60,7 @@ def add_jaxrl_args(parser: argparse.ArgumentParser):
     ## TODO: Need to change these to match the configs in the runner policy configs
     arg_group.add_argument("--dataset_path", type=str, default=None, help="Path to the dataset to use for training.")
     arg_group.add_argument(
-        "--algorithm", type=str, default=None, choices=["iql", "sac", "td3", "bc", "redq", "droq"], help="Algorithm to use for training."
+        "--algorithm", type=str, default=None, choices=ALGORITHM_CHOICES, help="Algorithm to use for training."
     )
 
 

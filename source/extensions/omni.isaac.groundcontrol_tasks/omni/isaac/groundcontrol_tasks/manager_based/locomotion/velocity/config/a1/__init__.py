@@ -25,6 +25,9 @@ gym.register(
         "jaxrl_sac_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatSACRunnerCfg",
         "jaxrl_redq_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatREDQRunnerCfg",
         "jaxrl_droq_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatDroQRunnerCfg",
+        "jaxrl_rlpd_sac_cfg_entry_point": f"{agents.__name__}.jaxrl_rlpd_cfg:UnitreeA1FlatRLPDSACRunnerCfg",
+        "jaxrl_rlpd_redq_cfg_entry_point": f"{agents.__name__}.jaxrl_rlpd_cfg:UnitreeA1FlatRLPDDREDQRunnerCfg",
+        "jaxrl_rlpd_droq_cfg_entry_point": f"{agents.__name__}.jaxrl_rlpd_cfg:UnitreeA1FlatRLPDDroQRunnerCfg",
     },
 )
 

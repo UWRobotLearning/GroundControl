@@ -28,7 +28,7 @@ class UnitreeA1FlatTD3RunnerCfg(TD3RunnerConfig):
     max_iterations = int(1e6)
     batch_size = 256
     start_training = 10000
-
+    utd_ratio = 1
     algorithm = TD3AlgorithmConfig(
         algorithm_name = "td3",
         actor_lr = 3e-4,
