@@ -22,7 +22,7 @@ python /source/standalone/environments/teleoperation/teleop_se2_agent.py --task 
 ```
 
 
-## Installation Instructions for Isaac Lab, GroundControl, and JaxRL
+# Installation Instructions for Isaac Lab, GroundControl, and JaxRL
 
 ### Isaac Lab
 ```bash
@@ -105,3 +105,71 @@ pip install -e .
 ## Verify installation
 MUJOCO_GL=egl XLA_PYTHON_CLIENT_PREALLOCATE=false python train_online.py --env_name=HalfCheetah-v4  --start_training 10000 --max_steps 1000000 --config=configs/rlpd_config.py
 ```
+
+# Instructions for running the code
+
+## Running pre-training with PPO
+
+To run pre-training with PPO, run:
+```bash
+python source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --headless --video 
+```
+
+## Running data collection of PPO expert policy
+
+To run data collection of PPO expert policy, run:
+```bash
+python source/standalone/workflows/rsl_rl/collect.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 64 --headless
+```
+
+## Running fine-tuning with PPO on slope environment
+
+To run fine-tuning with PPO on slope environment, run:
+```bash
+# If --resume is True, there is a hardcoded path to load the model from in the train.py file. Need to fix this. 
+# Add --num_envs 1 if you want to try fine-tuning in the single-agent setting.
+python source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Slope-Unitree-A1-v0 --resume True --video 
+```
+
+## Running offline training with BC or IQL
+
+To run offline training with BC or IQL, run:
+```bash
+# BC (Replace dataset_path with your own). To avoid rendering, add --headless.
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_offline.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 64 --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --algorithm bc --video
+
+# IQL
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_offline.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 64 --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --algorithm iql --video
+```
+
+## Running online training with {SAC, REDQ, DroQ, TD3}
+
+To run online training with SAC, REDQ, DroQ, or TD3, run:
+```bash
+# SAC. To avoid rendering, add --headless.
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm sac --video
+
+# REDQ
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm redq --video
+
+# DroQ
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm droq --video
+
+# TD3
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm td3 --video
+```
+
+## Running hybrid RL with {RLPD-SAC, RLPD-REDQ, RLPD-DroQ}
+
+To run hybrid RL with RLPD-SAC, RLPD-REDQ, or RLPD-DroQ, run:
+```bash
+# RLPD-SAC. To avoid rendering, add --headless.
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_hybrid.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm rlpd_sac --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --video
+
+# RLPD-REDQ
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_hybrid.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm rlpd_redq --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --video
+
+# RLPD-DroQ
+CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_hybrid.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --algorithm rlpd_droq --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --video
+```
+
