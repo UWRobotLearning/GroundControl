@@ -1,61 +1,3 @@
-# def collect(collect_cfg, env, policy, obs_processor=lambda x: x, action_processor=lambda x: x, nn_normalized_actions=True):  ## TODO: task_cfg could be replaced by collect config
-#     '''
-#     if nn_normalized_actions=True, this means that the actions returned by policy(obs) will be in the range [-1, 1]
-#     '''
-#     log.info("Collecting")
-    
-#     ## Initialize Replay Buffer
-#     replay_buffer = ReplayBuffer(env.observation_space, env.action_space, capacity=collect_cfg.dataset_size, next_observation_space=env.observation_space, observation_labels=env.observation_labels)
-#     ## Reset environment
-#     env.reset()
-#     # import ipdb;ipdb.set_trace()
-#     obs = env.get_observations(1)
-#     critic_obs = env.get_critic_observations(collect_cfg.history_length)
-#     extra_obs = env.get_extra_observations(collect_cfg.history_length)
-
-#     obs_processed = obs_processor(obs.detach())
-
-#     action_scaler = RescaleActionAsymmetric(env.action_space, -1, 1, center_action=np.zeros(env.action_space.shape))
-
-#     current_time = time.time()
-#     while len(replay_buffer) < collect_cfg.dataset_size:
-#         raw_actions = policy(obs_processed)
-#         if nn_normalized_actions:  ## This means action came from an SAC++ policy
-#             unnormalized_actions = action_scaler.transform_action(raw_actions, use_torch=True)
-#             # unnormalized_actions = unnormalize_action(raw_actions, env.action_space)
-#         else:
-#             unnormalized_actions = clip_action(raw_actions, env.action_space)
-
-#         if torch.is_tensor(unnormalized_actions):
-#             unnormalized_actions = unnormalized_actions.detach()
-#         actions_processed = action_processor(unnormalized_actions)  ## This is here to interface between pytorch and numpy, to make sure actions are always torch tensors when they go into env
-#         new_obs, new_critic_obs, rewards, dones, infos, *_ = env.step(actions_processed)
-#         ## Hacky override to get a specific amount of steps:
-#         new_obs = env.get_observations(1)
-#         new_critic_obs = env.get_critic_observations(collect_cfg.history_length)
-#         ## end of hacky override
-#         new_extra_obs = env.get_extra_observations(collect_cfg.history_length)
-#         duration = time.time() - current_time
-#         if duration < env.dt:
-#             time.sleep(env.dt - duration)
-#         current_time = time.time()
-
-#         print(f"replay_buffer size: {len(replay_buffer)}")
-#         buffer_observations = torch.concatenate([critic_obs, extra_obs], dim=-1)  ## Note: critic_obs contains obs, but does not get processed, so it's always a PyTorch tensor
-#         buffer_new_observations = torch.concatenate([new_critic_obs, new_extra_obs], dim=-1)
-#         normalized_actions = action_scaler.inverse_transform_action(actions_processed, use_torch=True)
-#         # normalized_actions = normalize_action(actions_processed, env.action_space)
-#         insert_batch_into_replay_buffer(replay_buffer, buffer_observations, normalized_actions, rewards, dones, buffer_new_observations, infos, env.observation_labels)
-#         obs = new_obs
-#         critic_obs = new_critic_obs
-#         extra_obs = new_extra_obs
-
-#         obs_processed = obs_processor(obs.detach())
-
-#     log.info("Done collecting")
-#     return replay_buffer
-
-
 # Copyright (c) 2022-2024, The Isaac Lab Project Developers.
 # All rights reserved.
 #
@@ -253,7 +195,7 @@ def main():
         #     if timestep == args_cli.video_length:
         #         break
 
-    replay_buffer_path = os.path.abspath("./expert_ppo_buffer.npz")
+    replay_buffer_path = os.path.abspath("./expert_ppo_buffer.npz")  ## TODO: Make this a command line argument
     print(f"Saving replay buffer to {replay_buffer_path}")
     save_replay_buffer(replay_buffer, replay_buffer_path, observation_space, action_space)
     print("Done saving replay buffer")
@@ -266,3 +208,10 @@ if __name__ == "__main__":
     main()
     # close sim app
     simulation_app.close()
+
+
+'''
+Run with:
+
+python source/standalone/workflows/rsl_rl/collect.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 64
+'''

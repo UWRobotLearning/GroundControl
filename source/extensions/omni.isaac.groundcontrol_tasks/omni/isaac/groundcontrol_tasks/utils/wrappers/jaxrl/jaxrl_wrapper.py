@@ -125,7 +125,9 @@ class JaxrlEnvWrapper(gym.Env):
         # note: stable-baselines3 does not like when we have unbounded action space so
         #   we set it to some high value here. Maybe this is not general but something to think about.
         self.observation_space = self.unwrapped.single_observation_space["policy"]
+        self.full_observation_space = self.unwrapped.observation_space["policy"]
         action_space = self.unwrapped.single_action_space
+        self.full_action_space = self.unwrapped.action_space
         if isinstance(action_space, gym.spaces.Box) and not action_space.is_bounded("both"):
             ## TODO: This needs to be set to be the proper joint limits of the USD. We may also need to have an action 
             ## space that represents the [-1, 1] action space that jaxrl expects
@@ -133,7 +135,16 @@ class JaxrlEnvWrapper(gym.Env):
             lower_limit = self.env.scene['robot'].data.joint_limits[0, :, 0].cpu().detach().numpy()
             upper_limit = self.env.scene['robot'].data.joint_limits[0, :, 1].cpu().detach().numpy()
             self.action_space = gym.spaces.Box(low=lower_limit, high=upper_limit, shape=action_space.shape)
-
+            # Reshape lower_limit and upper_limit
+            lower_limit = lower_limit.reshape(1, -1).repeat(self.num_envs, axis=0)
+            upper_limit = upper_limit.reshape(1, -1).repeat(self.num_envs, axis=0)
+            ## This is useful for sampling actions for parallel environments
+            self.full_action_space = gym.spaces.Box(
+                low=lower_limit,
+                high=upper_limit,
+                shape=self.full_action_space.shape,
+                dtype=self.full_action_space.dtype
+            )
         # add buffer for logging episodic information
         self._ep_rew_buf = torch.zeros(self.num_envs, device=self.sim_device)
         self._ep_len_buf = torch.zeros(self.num_envs, device=self.sim_device)
@@ -230,6 +241,7 @@ class JaxrlEnvWrapper(gym.Env):
     #     return obs, rew, dones, infos
     
     def step(self, normalized_actions): 
+        assert normalized_actions.all() <= 1.0 and normalized_actions.all() >= -1.0, "Input actions should be normalized, i.e. in the range [-1, 1]"
         # Convert action to unnormalized values
         unnormalized_actions = self.action_scaler.transform_action(normalized_actions, use_torch=torch.is_tensor(normalized_actions))
 
@@ -267,13 +279,13 @@ class JaxrlEnvWrapper(gym.Env):
         self._ep_rew_buf[reset_ids] = 0
         self._ep_len_buf[reset_ids] = 0
 
-        # Squeeze outputs if num_envs is 1
-        if self.num_envs == 1:
-            obs = self._squeeze_output(obs)
-            rew = np.squeeze(rew)
-            terminated = np.squeeze(terminated)
-            truncated = np.squeeze(truncated)
-            infos = infos[0] if infos else {}
+        # # Squeeze outputs if num_envs is 1
+        # if self.num_envs == 1:
+        #     obs = self._squeeze_output(obs)
+        #     rew = np.squeeze(rew)
+        #     terminated = np.squeeze(terminated)
+        #     truncated = np.squeeze(truncated)
+        #     infos = infos[0] if infos else {}
 
         # return obs, reward, terminated, truncated, extras
         return obs, rew, terminated, truncated, infos

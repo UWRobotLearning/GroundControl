@@ -21,6 +21,10 @@ gym.register(
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
         "jaxrl_bc_cfg_entry_point": f"{agents.__name__}.jaxrl_bc_cfg:UnitreeA1FlatBCRunnerCfg",
         "jaxrl_iql_cfg_entry_point": f"{agents.__name__}.jaxrl_iql_cfg:UnitreeA1FlatIQLRunnerCfg",
+        "jaxrl_td3_cfg_entry_point": f"{agents.__name__}.jaxrl_td3_cfg:UnitreeA1FlatTD3RunnerCfg",
+        "jaxrl_sac_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatSACRunnerCfg",
+        "jaxrl_redq_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatREDQRunnerCfg",
+        "jaxrl_droq_cfg_entry_point": f"{agents.__name__}.jaxrl_sac_cfg:UnitreeA1FlatDroQRunnerCfg",
     },
 )
 

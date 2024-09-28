@@ -20,7 +20,7 @@ class UnitreeA1FlatBCRunnerCfg(BCRunnerConfig):
     log_interval = 1000
     save_interval = 100000
     eval_episodes = 1
-    eval_interval = 100000#5000
+    eval_interval = 10000#5000
     checkpoint_model = True
     save_video = True
     video_interval = 1000

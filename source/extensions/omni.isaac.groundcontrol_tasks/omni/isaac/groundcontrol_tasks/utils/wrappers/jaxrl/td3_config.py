@@ -65,7 +65,7 @@ class TD3RunnerConfig:
     checkpoint_model: bool = True
     checkpoint_buffer: bool = True
     save_video: bool = False
-    wandb: bool = True
+    # wandb: bool = True
     video_interval: int = 20
     tqdm: bool = True
     episode_buffer_len: int = 100  # Window of previous episodes to consider for average rewards/lengths
@@ -75,6 +75,14 @@ class TD3RunnerConfig:
     batch_size: int = 256
     utd_ratio: int = 1
     reset_param_interval: Optional[int] = None #int(1e4)  # Not currently integrated
+
+    resume: bool = MISSING
+    load_run: str = MISSING
+    checkpoint: str = MISSING
+    logger: str = MISSING
+    log_project_name: str = MISSING
+    wandb_project: str = MISSING
+    neptune_project: str = MISSING
 
     # def get_flat_config(self, use_prefix: bool = True) -> Dict[str, Any]:
     #     return flatten_config_dataclass(self, '' if use_prefix else None)

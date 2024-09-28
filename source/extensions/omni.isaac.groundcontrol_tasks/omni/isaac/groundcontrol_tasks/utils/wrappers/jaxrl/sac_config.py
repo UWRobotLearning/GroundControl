@@ -75,7 +75,7 @@ class SACRunnerConfig:
     checkpoint_model: bool = True
     checkpoint_buffer: bool = True
     save_video: bool = False
-    wandb: bool = True
+    # wandb: bool = True
     video_interval: int = 20
     tqdm: bool = True
     episode_buffer_len: int = 100  # Window of previous episodes to consider for average rewards/lengths
@@ -89,6 +89,14 @@ class SACRunnerConfig:
 
     # def get_flat_config(self, use_prefix: bool = True) -> Dict[str, Any]:
     #     return flatten_config_dataclass(self, '' if use_prefix else None)
+
+    resume: bool = MISSING
+    load_run: str = MISSING
+    checkpoint: str = MISSING
+    logger: str = MISSING
+    log_project_name: str = MISSING
+    wandb_project: str = MISSING
+    neptune_project: str = MISSING
 
     def to_dict(self) -> Dict[str, Any]:
         return self.to_dict()
@@ -104,6 +112,7 @@ class REDQRunnerConfig(SACRunnerConfig):
             critic_layer_norm=True,  ## REDQ paper doesn't have this, but leaving this on for now.
         )
     )
+    utd_ratio = 20
 
 @configclass
 class DroQRunnerConfig(SACRunnerConfig):
@@ -115,3 +124,4 @@ class DroQRunnerConfig(SACRunnerConfig):
             critic_layer_norm=True,  ## Also part of DroQ paper
         )
     )
+    utd_ratio = 20

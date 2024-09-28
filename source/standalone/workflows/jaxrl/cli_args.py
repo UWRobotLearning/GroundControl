@@ -47,7 +47,7 @@ def add_jaxrl_args(parser: argparse.ArgumentParser):
     ## TODO: Need to change these to match the configs in the runner policy configs
     arg_group.add_argument("--dataset_path", type=str, default=None, help="Path to the dataset to use for training.")
     arg_group.add_argument(
-        "--algorithm", type=str, default=None, choices=["iql", "sac", "td3", "bc"], help="Algorithm to use for training."
+        "--algorithm", type=str, default=None, choices=["iql", "sac", "td3", "bc", "redq", "droq"], help="Algorithm to use for training."
     )
 
 
