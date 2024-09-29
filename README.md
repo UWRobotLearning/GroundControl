@@ -106,6 +106,19 @@ pip install -e .
 MUJOCO_GL=egl XLA_PYTHON_CLIENT_PREALLOCATE=false python train_online.py --env_name=HalfCheetah-v4  --start_training 10000 --max_steps 1000000 --config=configs/rlpd_config.py
 ```
 
+### Installing SB3 and SBX
+
+Stable Baselines 3 should already be installed with IsaacLab. In order to install sbx as a pip package, you can follow the instructions here: https://github.com/araffin/sbx. Alternatively, if you want to modify sbx, you can install it locally as follows:
+
+```bash
+# Assuming you are in a directory like ~/projects/GroundControl, it is advisable to install sbx in ~/projects for cleaner version control.
+conda activate IsaacLab # Or the name of your conda environment
+cd ~/projects ## Or wherever you want it installed
+git clone git@github.com:araffin/sbx.git
+cd sbx
+pip install -e .
+```
+
 # Instructions for running the code
 
 ## Running pre-training with PPO
