@@ -275,8 +275,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         replay_buffer.dataset_dict["actions"].clip(-lim, lim)
 
     ## TODO: Choice of buffer size can be either agent_cfg.replay_buffer_size or agent_cfg.num_pretraining_steps + agent_cfg.max_iterations
-    replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.num_pretraining_steps + agent_cfg.max_iterations, obs_space, action_space)
-    # replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.replay_buffer_size, obs_space, action_space)
+    # replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.num_pretraining_steps + agent_cfg.max_iterations, obs_space, action_space)
+    replay_buffer = expand_buffer_capacity(replay_buffer, agent_cfg.replay_buffer_size, obs_space, action_space)
 
     kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
     algorithm_name = kwargs.pop('algorithm_name', 'iql')  # Default to BC if not specified
