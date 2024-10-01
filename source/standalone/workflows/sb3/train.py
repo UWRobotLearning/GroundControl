@@ -26,6 +26,7 @@ parser.add_argument("--num_envs", type=int, default=None, help="Number of enviro
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--algorithm", type=str, default="sac", choices=["sac", "ppo"], help="RL algorithm to use.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -48,7 +49,7 @@ import numpy as np
 import os
 from datetime import datetime
 
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import VecNormalize
@@ -59,14 +60,31 @@ from omni.isaac.lab.utils.io import dump_pickle, dump_yaml
 
 import omni.isaac.lab_tasks  # noqa: F401
 from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
-from omni.isaac.lab_tasks.utils.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 import omni.isaac.groundcontrol_tasks
+from omni.isaac.groundcontrol_tasks.utils.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+
+## Put these functions somewhere else:
+def get_sb3_entry_point(algorithm: str = "sac"):
+    if algorithm.lower() == "sac":
+        return "sb3_sac_cfg_entry_point"
+    elif algorithm.lower() == "ppo":
+        return "sb3_ppo_cfg_entry_point"
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm}")
+
+def get_learner(learner_name: str, policy_arch, env, agent_cfg):
+    if (learner_name.lower() == "sac"):
+        return SAC(policy_arch, env, verbose=1, **agent_cfg)
+    elif learner_name.lower() == "ppo":
+        return PPO(policy_arch, env, verbose=1, **agent_cfg)
+    else:
+        raise ValueError(f"Unknown learner: {learner_name}")
 
 
-@hydra_task_config(args_cli.task, "sb3_cfg_entry_point")
+@hydra_task_config(args_cli.task, get_sb3_entry_point(args_cli.algorithm))
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     """Train with stable-baselines agent."""
     # override configurations with non-hydra CLI arguments
@@ -77,7 +95,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         agent_cfg["n_timesteps"] = args_cli.max_iterations * agent_cfg["n_steps"] * env_cfg.scene.num_envs
 
     # directory for logging into
-    log_dir = os.path.join("logs", "sb3", args_cli.task, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    log_dir = os.path.join("logs", "sb3", args_cli.algorithm, args_cli.task, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
@@ -120,7 +138,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
         )
 
     # create agent from stable baselines
-    agent = PPO(policy_arch, env, verbose=1, **agent_cfg)
+    agent = get_learner(args_cli.algorithm, policy_arch, env, agent_cfg)
     # configure the logger
     new_logger = configure(log_dir, ["stdout", "tensorboard"])
     agent.set_logger(new_logger)

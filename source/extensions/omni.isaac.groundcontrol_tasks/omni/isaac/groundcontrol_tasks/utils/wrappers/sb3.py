@@ -154,7 +154,10 @@ class Sb3VecEnvWrapper(VecEnv):
         observation_space = self.unwrapped.single_observation_space["policy"]
         action_space = self.unwrapped.single_action_space
         if isinstance(action_space, gym.spaces.Box) and not action_space.is_bounded("both"):
-            action_space = gym.spaces.Box(low=-100, high=100, shape=action_space.shape)
+            lower_limit = self.env.scene['robot'].data.joint_limits[0, :, 0].cpu().detach().numpy()
+            upper_limit = self.env.scene['robot'].data.joint_limits[0, :, 1].cpu().detach().numpy()
+            action_space = gym.spaces.Box(low=lower_limit, high=upper_limit, shape=action_space.shape)
+            # action_space = gym.spaces.Box(low=-100, high=100, shape=action_space.shape)
 
         # initialize vec-env
         VecEnv.__init__(self, self.num_envs, observation_space, action_space)

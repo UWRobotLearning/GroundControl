@@ -1,0 +1,16 @@
+seed: 42
+
+# # not tuned
+n_timesteps: !!float 10_000_000_000
+policy: 'MlpPolicy'
+learning_rate: !!float 3e-4
+buffer_size: 5000000
+batch_size: 512
+ent_coef: 'auto'
+train_freq: 32
+gradient_steps: 32
+gamma: 0.99
+tau: 0.01
+learning_starts: 10000
+use_sde: True
+policy_kwargs: "dict(log_std_init=-3.0, net_arch=[128, 128, 128])"

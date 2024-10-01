@@ -24,11 +24,11 @@ class UnitreeA1FlatIQLRunnerCfg(IQLRunnerConfig):
     checkpoint_model = True
     save_video = True
     video_interval = 1_000
-    max_iterations = 100_000
+    max_iterations = 1_000_000
     batch_size = 256
 
     ## Only used for offline to online
-    num_pretraining_steps = 100_000
+    num_pretraining_steps = 1_000_000
     replay_buffer_size = 2_000_000
 
     algorithm = IQLAlgorithmConfig(
