@@ -88,9 +88,18 @@ class ObservationsCfg:
         #)
         # TODO: add more cameras later
         # TODO: note that the camera is now out of PolicyCfg, this is because the policy does not depend on camera atm 
+
+    # Config for observations that are needed for logging, but not for high-level policy learning
+    @configclass
+    class EnvStateCfg(ObsGroup):
+        concatenate_terms = False
+        root_pos = ObsTerm(func=mdp.root_pos_w)
+        root_quat = ObsTerm(func=mdp.root_quat_w)
+
     # observation groups
     policy: PolicyCfg = PolicyCfg()
     perception: PerceptionCfg = PerceptionCfg()
+    env_state: EnvStateCfg = EnvStateCfg()
 
 
 @configclass
@@ -218,4 +227,4 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
         self.observations.policy.enable_corruption = False
 
         # Episode Termination Length
-        self.episode_length_s = 20.0
+        self.episode_length_s = 2000.0 #TODO: this governs the total amount of time for datacollection
