@@ -110,12 +110,16 @@ def main():
 
     # create teleoperation controller
     #TODO: remove duplicate code between teleop and datacollect
+    toggle_key, reset_key, done_key = None, None, None
     if args_cli.teleop_device.lower() == "keyboard":
         teleop_interface = Se2Keyboard(
             v_x_sensitivity=args_cli.sensitivity,
             v_y_sensitivity=args_cli.sensitivity,
             omega_z_sensitivity=args_cli.sensitivity,
         )
+        toggle_key = "T"
+        reset_key = "R"
+        done_key = "E"
     elif args_cli.teleop_device.lower() == "spacemouse":
         teleop_interface = Se2SpaceMouse(
             pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.005 * args_cli.sensitivity
@@ -126,6 +130,9 @@ def main():
             v_y_sensitivity=args_cli.sensitivity,
             omega_z_sensitivity=args_cli.sensitivity,
         )
+        toggle_key = GamepadInput.DPAD_UP
+        reset_key = GamepadInput.DPAD_DOWN
+        done_key = GamepadInput.DPAD_RIGHT
     else:
         raise ValueError(f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse', gamepad.")
 
@@ -152,11 +159,11 @@ def main():
 
     # add teleoperation key for toggling data collection
     record_state = DataRecordState() 
-    teleop_interface.add_callback(GamepadInput.DPAD_UP, lambda : toggle_data_collection(record_state))
+    teleop_interface.add_callback(toggle_key, lambda : toggle_data_collection(record_state))
     # add teleoperation key for env reset
-    teleop_interface.add_callback(GamepadInput.DPAD_DOWN, lambda : reset_env_from_teleop_input(env))
+    teleop_interface.add_callback(reset_key, lambda : reset_env_from_teleop_input(env))
     # add teleoperation key for finishing collection 
-    teleop_interface.add_callback(GamepadInput.DPAD_RIGHT, lambda : finish_data_collection(record_state))
+    teleop_interface.add_callback(done_key, lambda : finish_data_collection(record_state))
 
     # reset environment
     obs_dict, _ = env.reset()
