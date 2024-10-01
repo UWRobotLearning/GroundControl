@@ -67,12 +67,12 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
 from jaxrl.agents import IQLLearner
-from jaxrl.data import load_replay_buffer, ReplayBuffer
+from jaxrl.data import load_replay_buffer, ReplayBuffer, save_replay_buffer
 from typing import Dict, Any, Optional
 import tqdm
 import jax
 import wandb
-import torch
+import orbax.checkpoint as ocp
 
 ## TODO: Put somewhere else
 def flatten_config(cfg: Dict[str, Any], prefix: Optional[str] = '') -> Dict[str, Any]:
@@ -237,6 +237,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     wandb.init(project="gc_jaxrl")
     wandb.config.update(agent_cfg.to_dict())
 
+    if agent_cfg.checkpoint_model:
+        chkpt_dir = os.path.join(log_dir, "checkpoints")
+        os.makedirs(chkpt_dir, exist_ok=True)
+
+        ## Set up Orbax checkpointer manager
+        # import absl.logging
+        # absl.logging.set_verbosity(absl.logging.INFO)  ## this can make it less verbose
+        options = ocp.CheckpointManagerOptions(create=True)
+        checkpoint_manager = ocp.CheckpointManager(
+            chkpt_dir, options=options)
+
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
     # wrap for video recording
@@ -345,12 +356,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
             for k, v in eval_info.items():
                 wandb.log({f"evaluation/{k}": v}, step=i)
 
-        # if i % agent_cfg.save_interval == 0 and i > 0:
-        #     if agent_cfg.checkpoint_model:
-        #         try:
-        #             checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-        #         except:
-        #             print("Could not save model checkpoint.")
+        if i % agent_cfg.save_interval == 0 and i > 0:
+            if agent_cfg.checkpoint_model:
+                try:
+                    checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+                except:
+                    print("Could not save model checkpoint.")
+
+            if agent_cfg.checkpoint_buffer:
+                try:
+                    ## Note, replay_buffer contains both offline and online data after online training starts
+                    save_replay_buffer(replay_buffer, os.path.join(log_dir, 'buffers', f"buffer_{i}.npz"), env.observation_space, env.action_space)
+                except:
+                    print("Could not save agent buffer.")
+    checkpoint_manager.wait_until_finished()
 
 
     # callbacks for agent

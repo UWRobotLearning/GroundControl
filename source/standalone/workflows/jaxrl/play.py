@@ -20,7 +20,7 @@ from omni.isaac.lab.app import AppLauncher
 import cli_args  # isort: skip
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an offline RL agent with JaxRL.")
+parser = argparse.ArgumentParser(description="Train an online RL agent with JaxRL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
@@ -28,6 +28,9 @@ parser.add_argument("--num_envs", type=int, default=1, help="Number of environme
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--checkpoint_dir", type=str, default=None, help="Path to the checkpoint directory to load.")
+parser.add_argument("--checkpoint_step", type=int, default=None, help="Step of the checkpoint to load.")
+
 # append JaxRL cli arguments
 cli_args.add_jaxrl_args(parser)
 # append AppLauncher cli args
@@ -52,7 +55,6 @@ import numpy as np
 import os
 from datetime import datetime
 
-
 from omni.isaac.lab.envs import (
     DirectRLEnvCfg,
     ManagerBasedRLEnvCfg,)
@@ -66,12 +68,8 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
-from jaxrl.agents import IQLLearner, BCLearner
-from jaxrl.data import load_replay_buffer
-from typing import Dict, Any, Optional
-import tqdm
-import jax
-import wandb
+from jaxrl.agents import SACLearner, TD3Learner, IQLLearner, BCLearner
+from typing import Dict, Any, Optional, Union
 import orbax.checkpoint as ocp
 
 ## TODO: Put somewhere else
@@ -99,38 +97,78 @@ def to_dict(cfg: Dict[str, Any]) -> Dict[str, Any]:
 def get_flat_config(cfg: Dict[str, Any], use_prefix: bool = True) -> Dict[str, Any]:
     return flatten_config(cfg, '' if use_prefix else None)
 
-def evaluate(
-    agent, env: gym.Env, num_episodes: int, save_video: bool = False
-) -> Dict[str, float]:
-    return_queue = np.zeros((num_episodes, env.num_envs))
-    length_queue = np.zeros((num_episodes, env.num_envs))
-    for i in range(num_episodes):
-        observation, _ = env.reset()
-        done = np.full(env.num_envs, False)
-        while not done.all():
-            action = agent.eval_actions(observation)
-            assert not np.isnan(action).any(), "NaN in action"
-            observation, rewards, terminated, truncated, info = env.step(action)
-            done = terminated | truncated | done
-            return_queue[i, ~done] += rewards[~done]
-            length_queue[i, ~done] += 1
-    return {"return": np.mean(return_queue), "length": np.mean(length_queue)}
-
-def get_jaxrl_entry_point(algorithm: str = "bc"):
-    if algorithm.lower() == "iql":
+def get_jaxrl_entry_point(algorithm: str = "sac"):
+    if algorithm.lower() == "sac":
+        return "jaxrl_sac_cfg_entry_point"
+    elif algorithm.lower() == "redq":
+        return "jaxrl_redq_cfg_entry_point"
+    elif algorithm.lower() == "droq":
+        return "jaxrl_droq_cfg_entry_point"
+    elif algorithm.lower() == "td3":
+        return "jaxrl_td3_cfg_entry_point"
+    elif algorithm.lower() == "iql":
         return "jaxrl_iql_cfg_entry_point"
     elif algorithm.lower() == "bc":
         return "jaxrl_bc_cfg_entry_point"
+    elif algorithm.lower() == "rlpd_sac":
+        return "jaxrl_rlpd_sac_cfg_entry_point"
+    elif algorithm.lower() == "rlpd_redq":
+        return "jaxrl_rlpd_redq_cfg_entry_point"
+    elif algorithm.lower() == "rlpd_droq":
+        return "jaxrl_rlpd_droq_cfg_entry_point"
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 
 def get_learner(learner_name: str, seed: int, observation_space, action_space, **kwargs):
-    if learner_name.lower() == "iql":
-        return IQLLearner.create(seed, observation_space, action_space, **kwargs)
+    if (
+        (learner_name.lower() == "sac") or
+        (learner_name.lower() == "redq") or
+        (learner_name.lower() == "droq") or
+        (learner_name.lower() == "rlpd_sac") or
+        (learner_name.lower() == "rlpd_redq") or
+        (learner_name.lower() == "rlpd_droq")
+        # You can continue adding more conditions as needed
+    ):
+        return SACLearner.create(seed, observation_space, action_space, **kwargs)
+    elif learner_name.lower() == "td3":
+        return TD3Learner.create(seed, observation_space, action_space, **kwargs)
     elif learner_name.lower() == "bc":
         return BCLearner.create(seed, observation_space, action_space, **kwargs)
+    elif learner_name.lower() == "iql":
+        return IQLLearner.create(seed, observation_space, action_space, **kwargs)
     else:
         raise ValueError(f"Unknown learner: {learner_name}")
+    
+def load_jax_model(checkpoint_dir, step=0):
+    """
+    Load a JAX model saved with Orbax checkpointer.
+
+    Args:
+    checkpoint_dir (str): Directory where the checkpoint was saved.
+    step (int): The step number of the checkpoint to load. Default is 0.
+
+    Returns:
+    The loaded model.
+    """
+
+    # Initialize the checkpointer
+    options = ocp.CheckpointManagerOptions()
+    orbax_checkpointer = ocp.PyTreeCheckpointer()
+    checkpoint_manager = ocp.CheckpointManager(
+        checkpoint_dir, 
+        orbax_checkpointer, 
+        options
+    )
+
+    # Get the latest checkpoint if step is not specified
+    if step is None:
+        step = checkpoint_manager.latest_step()
+
+    # Load the checkpoint
+    loaded_model = checkpoint_manager.restore(step)
+
+    print(f"Loaded model from step {step}")
+    return loaded_model
 
 @hydra_task_config(args_cli.task, get_jaxrl_entry_point(args_cli.algorithm))
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
@@ -141,6 +179,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     agent_cfg.max_iterations = (
         args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
     )
+
+    # assert args_cli.num_envs == 1, "num_envs must be 1 for online training. Parallel environments not supported yet."
 
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
@@ -155,20 +195,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     if agent_cfg.run_name:
         log_dir += f"_{agent_cfg.run_name}"
     log_dir = os.path.join(log_root_path, log_dir)
-
-    wandb.init(project="gc_jaxrl")
-    wandb.config.update(agent_cfg.to_dict())
-
-    if agent_cfg.checkpoint_model:
-        chkpt_dir = os.path.join(log_dir, "checkpoints")
-        os.makedirs(chkpt_dir, exist_ok=True)
-
-        ## Set up Orbax checkpointer manager
-        # import absl.logging
-        # absl.logging.set_verbosity(absl.logging.INFO)  ## this can make it less verbose
-        options = ocp.CheckpointManagerOptions(create=True)
-        checkpoint_manager = ocp.CheckpointManager(
-            chkpt_dir, options=options)
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
@@ -188,87 +214,28 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
     # wrap around environment for stable baselines
     env = JaxrlEnvWrapper(env)
 
-    # if "normalize_input" in agent_cfg:
-    #     env = VecNormalize(
-    #         env,
-    #         training=True,
-    #         norm_obs="normalize_input" in agent_cfg and agent_cfg.pop("normalize_input"),
-    #         norm_reward="normalize_value" in agent_cfg and agent_cfg.pop("normalize_value"),
-    #         clip_obs="clip_obs" in agent_cfg and agent_cfg.pop("clip_obs"),
-    #         gamma=agent_cfg["gamma"],
-    #         clip_reward=np.inf,
-    #     )
-
-    # configure the logger
-    ## TODO: Add logger for wandb similar to rsl_rl
-
-    replay_buffer, obs_space, action_space = load_replay_buffer(agent_cfg.dataset_path)
-    if agent_cfg.clip_to_eps:
-        lim = 1 - agent_cfg.eps
-        replay_buffer.dataset_dict["actions"].clip(-lim, lim)
-
     kwargs = get_flat_config(agent_cfg.algorithm.to_dict(), use_prefix=False)
-    algorithm_name = kwargs.pop('algorithm_name', 'bc')  # Default to BC if not specified
+    algorithm_name = kwargs.pop('algorithm_name', 'sac')  # Default to SAC if not specified
 
-    # create agent from stable baselines
+    # create agent from jaxrl
     agent = get_learner(algorithm_name, agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
 
+    # load the checkpoint
+    pretrained_agent: Union[SACLearner, TD3Learner, IQLLearner, BCLearner] = load_jax_model(args_cli.checkpoint_dir, 
+                                                                                            step=args_cli.checkpoint_step)
+    
+    agent = agent.initialize_pretrained_model(pretrained_agent)
 
-    for i in tqdm.tqdm(
-        range(1, agent_cfg.max_iterations + 1), smoothing=0.1, disable=not agent_cfg.tqdm
-    ):
-        batch = replay_buffer.sample(agent_cfg.batch_size)
-        agent, info = agent.update(batch)
+    
+    ## It'd be nice to export the policy to onnx/jit similar to rsl_rl
 
-        if i % agent_cfg.log_interval == 0:
-            info = jax.device_get(info)
-            # print(info)
-            wandb.log(info, step=i)
-
-        if i % agent_cfg.eval_interval == 0:
-            eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes)
-            # eval_info["return"] = env.get_normalized_score(eval_info["return"]) * 100.0
-            for k, v in eval_info.items():
-                wandb.log({f"evaluation/{k}": v}, step=i)
-
-        if i % agent_cfg.save_interval == 0 and i > 0:
-            if agent_cfg.checkpoint_model:
-                try:
-                    checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-                except:
-                    print("Could not save model checkpoint.")
-
-    checkpoint_manager.wait_until_finished()
-
-
-    # callbacks for agent
-    # checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=log_dir, name_prefix="model", verbose=2)
-    # train the agent
-    # agent.learn(total_timesteps=n_timesteps, callback=checkpoint_callback)
-    # save the final model
-    # agent.save(os.path.join(log_dir, "model"))
-    ## TODO: Save the model. It's a good idea to have an agent.save() function defined in jaxrl as part of the Agent class.
-
-    ## TODO: It'd be nice to have this functionality in jaxrl:
-    # # write git state to logs
-    # runner.add_git_repo_to_log(__file__)
-    # # save resume path before creating a new log_dir
-    # if agent_cfg.resume:
-    #     # get path to previous checkpoint
-    #     resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
-    #     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
-    #     # load previously trained model
-    #     runner.load(resume_path)
-
-    # # set seed of the environment
-    # env.seed(agent_cfg.seed)
-
-    # dump the configuration into log-directory
-    dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
-    dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "env.pkl"), env_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
-
+    observation, _ = env.reset()
+    # simulate environment
+    while simulation_app.is_running():
+        # agent stepping
+        normalized_action = agent.eval_actions(observation)
+        # env stepping
+        observation, _, _, _, _ = env.step(normalized_action)
     # close the simulator
     env.close()
 
@@ -278,3 +245,11 @@ if __name__ == "__main__":
     main()
     # close sim app
     simulation_app.close()
+
+
+'''
+Run with:
+
+python source/standalone/workflows/jaxrl/play.py --task Isaac-Velocity-Flat-Unitree-A1-Play-v0 --num_envs 64 --algorithm rlpd_redq --checkpoint_dir /home/mateo/projects/GroundControl/logs/jaxrl/rlpd_redq/unitree_a1_flat/2024-10-01_14-20-02/checkpoints --checkpoint_step 30000
+
+'''

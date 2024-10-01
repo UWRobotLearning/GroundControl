@@ -70,9 +70,9 @@ class RLPDSACRunnerConfig:
     run_name: Optional[str] = None  # If not None, used to save logs in dir date_run_name
     save_dir: str = "checkpoints"
     log_interval: int = 1000
-    save_interval: int = 100000
+    save_interval: int = 10_000
     eval_episodes: int = 10  # Not currently used
-    eval_interval: int = 5000  # Not currently used
+    eval_interval: int = 10_000  # Not currently used
     checkpoint_model: bool = True
     checkpoint_buffer: bool = True
     save_video: bool = False

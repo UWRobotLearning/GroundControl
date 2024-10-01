@@ -193,3 +193,12 @@ To run offline to online with IQL, run:
 # To avoid rendering, add --headless. Change dataset_path to your own.
 CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false python source/standalone/workflows/jaxrl/train_offline_to_online.py --task Isaac-Velocity-Flat-Unitree-A1-v0 --num_envs 1 --dataset_path /home/mateo/projects/GroundControl/expert_ppo_buffer.npz --algorithm iql --video
 ```
+
+## Playing a policy from a checkpoint
+
+To play a policy from a checkpoint, run:
+```bash
+# Make sure to change the env, algorithm, checkpoint_dir, and checkpoint_step to the correct values.
+python source/standalone/workflows/jaxrl/play.py --task Isaac-Velocity-Flat-Unitree-A1-Play-v0 --num_envs 64 --algorithm rlpd_redq --checkpoint_dir /home/mateo/projects/GroundControl/logs/jaxrl/rlpd_redq/unitree_a1_flat/2024-10-01_14-20-02/checkpoints --checkpoint_step 30000
+```
+

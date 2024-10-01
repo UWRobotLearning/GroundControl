@@ -66,12 +66,11 @@ from omni.isaac.lab_tasks.utils.hydra import hydra_task_config
 # ===== GroundControl imports === VVV
 from omni.isaac.groundcontrol_tasks.utils.wrappers.jaxrl import JaxrlEnvWrapper
 from jaxrl.agents import SACLearner, TD3Learner
-from jaxrl.data import ReplayBuffer, load_replay_buffer
+from jaxrl.data import ReplayBuffer, load_replay_buffer, save_replay_buffer
 from typing import Dict, Any, Optional
 import tqdm
-import jax
 import wandb
-import torch
+import orbax.checkpoint as ocp
 
 ## TODO: Put somewhere else
 def flatten_config(cfg: Dict[str, Any], prefix: Optional[str] = '') -> Dict[str, Any]:
@@ -164,6 +163,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
 
     wandb.init(project="gc_jaxrl")
     wandb.config.update(agent_cfg.to_dict())
+    
+    if agent_cfg.checkpoint_model:
+        chkpt_dir = os.path.join(log_dir, "checkpoints")
+        os.makedirs(chkpt_dir, exist_ok=True)
+
+        ## Set up Orbax checkpointer manager
+        # import absl.logging
+        # absl.logging.set_verbosity(absl.logging.INFO)  ## this can make it less verbose
+        options = ocp.CheckpointManagerOptions(create=True)
+        checkpoint_manager = ocp.CheckpointManager(
+            chkpt_dir, options=options)
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
@@ -264,26 +274,28 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg, agent_cfg: dict):
             batch = replay_buffer.sample(int(agent_cfg.batch_size * agent_cfg.utd_ratio))
             agent, update_info = agent.update(batch, utd_ratio=agent_cfg.utd_ratio)
 
-
-
         if i % agent_cfg.eval_interval == 0:
             eval_info = evaluate(agent, env, num_episodes=agent_cfg.eval_episodes, save_video=agent_cfg.save_video)
             for k, v in eval_info.items():
                 wandb.log({f"evaluation/{k}": v}, step=i)
 
-    #     if i % agent_cfg.save_interval == 0 and i > 0:
-    #         if agent_cfg.checkpoint_model:
-    #             try:
-    #                 checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
-    #             except:
-    #                 print("Could not save model checkpoint.")
+        if i % agent_cfg.save_interval == 0 and i > 0:
+            if agent_cfg.checkpoint_model:
+                try:
+                    checkpoint_manager.save(step=i, args=ocp.args.StandardSave(agent))
+                except:
+                    print("Could not save model checkpoint.")
 
-    #         if cfg.checkpoint_buffer:
-    #             try:
-    #                 save_replay_buffer(replay_buffer, os.path.join(buffer_dir, f"buffer_{i}"), env.observation_space, env.action_space)
-    #             except:
-    #                 print("Could not save agent buffer.")
-    # checkpoint_manager.wait_until_finished()
+            if agent_cfg.checkpoint_buffer:
+                try:
+                    save_replay_buffer(replay_buffer, os.path.join(log_dir, 'buffers', f"buffer_{i}.npz"), env.observation_space, env.action_space)
+                except:
+                    print("Could not save agent buffer.")
+
+        if agent_cfg.reset_param_interval is not None and i % agent_cfg.reset_param_interval == 0:
+            agent = get_learner(algorithm_name, agent_cfg.seed, env.observation_space, env.action_space, **kwargs)
+            
+    checkpoint_manager.wait_until_finished()
 
 
 
