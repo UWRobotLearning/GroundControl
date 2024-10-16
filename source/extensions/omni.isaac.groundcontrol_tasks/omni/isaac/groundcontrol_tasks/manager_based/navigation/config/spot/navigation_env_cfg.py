@@ -54,7 +54,8 @@ class ActionsCfg:
     pre_trained_policy_action: mdp.PreTrainedPolicyActionCfg = mdp.PreTrainedPolicyActionCfg(
         asset_name="robot",
         #TODO: Adjust the path to autofind
-        policy_path="/home/share_act/WRK/GroundControl/Policies/Spot/Blind/policy.pt",
+        #policy_path="/home/share_act/WRK/GroundControl/Policies/Spot/Blind/policy.pt",
+        policy_path="/home/schmittle/Research/long_range_navigator/GroundControl/Policies/Spot/Blind/policy.pt",
         #policy_path=f"{ISAACLAB_NUCLEUS_DIR}/Policies/ANYmal-C/Blind/policy.pt",
         low_level_decimation=4,
         low_level_actions=LOW_LEVEL_ENV_CFG.actions.joint_pos,

@@ -7,7 +7,9 @@ import math
 from dataclasses import MISSING
 
 import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
+from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
+from pxr import UsdPhysics
+from omni.isaac.core.utils.stage import get_current_stage
 from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
 from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
@@ -36,34 +38,86 @@ from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: sk
 ##
 # Scene definition
 ##
-
+def load_scene(usd_path):
+    cfg = sim_utils.UsdFileCfg(usd_path=usd_path, scale=(0.01, 0.01, 0.01))
+    root_prim = cfg.func("/World/imported_world", cfg)
+    prim_paths = [c.GetPath().pathString for c in root_prim.GetChildren()]
+    objs = []
+    for p in prim_paths:
+        if "sky" not in p:
+            objs.append(RigidObjectCfg(
+                    prim_path=p, 
+                    spawn=cfg,
+                    collision_group=-1,
+                    init_state=RigidObjectCfg.InitialStateCfg(pos=(0,0,0)),
+                ))
 
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
+    terrain = None
 
     # ground terrain
-    terrain = TerrainImporterCfg(
-        prim_path="/World/ground",
-        terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
-        max_init_terrain_level=5,
-        collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-        ),
-        visual_material=sim_utils.MdlFileCfg(
-            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-            project_uvw=True,
-            texture_scale=(0.25, 0.25),
-        ),
-        debug_vis=False,
-    )
+    # terrain = TerrainImporterCfg(
+    #     prim_path="/World/ground",
+    #     terrain_type="generator",
+    #     terrain_generator=ROUGH_TERRAINS_CFG,
+    #     max_init_terrain_level=5,
+    #     collision_group=-1,
+    #     physics_material=sim_utils.RigidBodyMaterialCfg(
+    #         friction_combine_mode="multiply",
+    #         restitution_combine_mode="multiply",
+    #         static_friction=1.0,
+    #         dynamic_friction=1.0,
+    #     ),
+    #     visual_material=sim_utils.MdlFileCfg(
+    #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+    #         project_uvw=True,
+    #         texture_scale=(0.25, 0.25),
+    #     ),
+    #     debug_vis=False,
+    # )
+
+
+    # Collidable assets
+    firs = RigidObjectCfg(
+            prim_path="/World/trees/fir", 
+            spawn=sim_utils.UsdFileCfg(usd_path="/home/schmittle/Desktop/spot_forest/firs.usd", scale=(0.01, 0.01, 0.01)),
+            collision_group=-1,
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(0,0,0)),
+        )
+
+    ground = RigidObjectCfg(
+            prim_path="/World/ground_plane", 
+            spawn=sim_utils.UsdFileCfg(usd_path="/home/schmittle/Desktop/spot_forest/ground_plane.usd", scale=(0.01, 0.01, 0.01)),
+            collision_group=-1,
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(0,0,0)),
+        )
+
+    # grass = RigidObjectCfg(
+    #         prim_path="/World/ground_veg/grass", 
+    #         spawn=sim_utils.UsdFileCfg(usd_path="/home/schmittle/Desktop/spot_forest/grass.usd", scale=(0.01, 0.01, 0.01)),
+    #         collision_group=-1,
+    #         init_state=RigidObjectCfg.InitialStateCfg(pos=(0,0,0)),
+    #     )
+
+    # yew = RigidObjectCfg(
+    #         prim_path="/World/ground_veg/yew", 
+    #         spawn=sim_utils.UsdFileCfg(usd_path="/home/schmittle/Desktop/spot_forest/yew.usd", scale=(0.01, 0.01, 0.01)),
+    #         init_state=RigidObjectCfg.InitialStateCfg(pos=(0,0,0)),
+    #     )
+
+
+    # # Visual features
+    # fern = AssetBaseCfg(
+    #         prim_path="/World/ground_veg/ferns", 
+    #         spawn=sim_utils.UsdFileCfg(usd_path="/home/schmittle/Desktop/spot_forest/ferns.usd", scale=(0.01, 0.01, 0.01)),
+    #         init_state=AssetBaseCfg.InitialStateCfg(pos=(0,0,0)),
+        #)
+
     # robots
     robot: ArticulationCfg = MISSING
+
     # sensors
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base",
@@ -74,6 +128,7 @@ class MySceneCfg(InteractiveSceneCfg):
         mesh_prim_paths=["/World/ground"],
     )
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
+
     # lights
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
@@ -235,7 +290,7 @@ class RewardsCfg:
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    ddof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     feet_air_time = RewTerm(
         func=mdp.feet_air_time,
@@ -304,7 +359,13 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
         self.sim.disable_contact_processing = True
-        self.sim.physics_material = self.scene.terrain.physics_material
+        #self.sim.physics_material = self.scene.terrain.physics_material
+        self.sim.physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        )
         # update sensor update periods
         # we tick all the sensors based on the smallest update period (physics update period)
         if self.scene.height_scanner is not None:
@@ -314,9 +375,10 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
 
         # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
         # this generates terrains with increasing difficulty and is useful for training
-        if getattr(self.curriculum, "terrain_levels", None) is not None:
-            if self.scene.terrain.terrain_generator is not None:
-                self.scene.terrain.terrain_generator.curriculum = True
-        else:
-            if self.scene.terrain.terrain_generator is not None:
-                self.scene.terrain.terrain_generator.curriculum = False
+        if self.scene.terrain is not None:
+            if getattr(self.curriculum, "terrain_levels", None) is not None:
+                if self.scene.terrain.terrain_generator is not None:
+                    self.scene.terrain.terrain_generator.curriculum = True
+            else:
+                if self.scene.terrain.terrain_generator is not None:
+                    self.scene.terrain.terrain_generator.curriculum = False

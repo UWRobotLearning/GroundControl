@@ -6,11 +6,13 @@
 import omni.isaac.lab.sim as sim_utils
 import omni.isaac.lab.terrains as terrain_gen
 from omni.isaac.lab.envs import ViewerCfg
+from omni.isaac.lab.assets.articulation import ArticulationCfg
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
 from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 from omni.isaac.lab.managers import RewardTermCfg, SceneEntityCfg
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.assets import AssetBaseCfg
 from omni.isaac.lab.terrains import TerrainImporterCfg
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
@@ -340,28 +342,40 @@ class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.scene.contact_forces.update_period = self.sim.dt
 
         # switch robot to Spot-d
-        self.scene.robot = SPOT_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        self.scene.robot = SPOT_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot",
+            init_state=ArticulationCfg.InitialStateCfg(
+                pos=(0,0,0.5),
+                joint_pos={
+                    "[fh]l_hx": 0.1,  # all left hip_x
+                    "[fh]r_hx": -0.1,  # all right hip_x
+                    "f[rl]_hy": 0.9,  # front hip_y
+                    "h[rl]_hy": 1.1,  # hind hip_y
+                    ".*_kn": -1.5,  # all knees
+                },
+                joint_vel={".*": 0.0},
+                )
+            )
 
         # terrain
-        self.scene.terrain = TerrainImporterCfg(
-            prim_path="/World/ground",
-            terrain_type="generator",
-            terrain_generator=COBBLESTONE_ROAD_CFG,
-            max_init_terrain_level=COBBLESTONE_ROAD_CFG.num_rows - 1,
-            collision_group=-1,
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="multiply",
-                restitution_combine_mode="multiply",
-                static_friction=1.0,
-                dynamic_friction=1.0,
-            ),
-            visual_material=sim_utils.MdlFileCfg(
-                mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
-                project_uvw=True,
-                texture_scale=(0.25, 0.25),
-            ),
-            debug_vis=True,
-        )
+        # self.scene.terrain = TerrainImporterCfg(
+        #     prim_path="/World/ground",
+        #     terrain_type="generator",
+        #     terrain_generator=COBBLESTONE_ROAD_CFG,
+        #     max_init_terrain_level=COBBLESTONE_ROAD_CFG.num_rows - 1,
+        #     collision_group=-1,
+        #     physics_material=sim_utils.RigidBodyMaterialCfg(
+        #         friction_combine_mode="multiply",
+        #         restitution_combine_mode="multiply",
+        #         static_friction=1.0,
+        #         dynamic_friction=1.0,
+        #     ),
+        #     visual_material=sim_utils.MdlFileCfg(
+        #         mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+        #         project_uvw=True,
+        #         texture_scale=(0.25, 0.25),
+        #     ),
+        #     debug_vis=True,
+        # )
 
         # no height scan
         self.scene.height_scanner = None
@@ -375,14 +389,15 @@ class SpotFlatEnvCfg_PLAY(SpotFlatEnvCfg):
         # make a smaller scene for play
         self.scene.num_envs = 50
         self.scene.env_spacing = 2.5
-        # spawn the robot randomly in the grid (instead of their terrain levels)
-        self.scene.terrain.max_init_terrain_level = None
+        if self.scene.terrain is not None:
+            # spawn the robot randomly in the grid (instead of their terrain levels)
+            self.scene.terrain.max_init_terrain_level = None
 
-        # reduce the number of terrains to save memory
-        if self.scene.terrain.terrain_generator is not None:
-            self.scene.terrain.terrain_generator.num_rows = 5
-            self.scene.terrain.terrain_generator.num_cols = 5
-            self.scene.terrain.terrain_generator.curriculum = False
+            # reduce the number of terrains to save memory
+            if self.scene.terrain.terrain_generator is not None:
+                self.scene.terrain.terrain_generator.num_rows = 5
+                self.scene.terrain.terrain_generator.num_cols = 5
+                self.scene.terrain.terrain_generator.curriculum = False
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False
