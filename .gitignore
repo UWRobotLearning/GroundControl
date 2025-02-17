@@ -161,6 +161,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+<<<<<<< HEAD
+=======
+# GroundControl assets
+>>>>>>> dd81a29fd88682f42c20cad798b9225ee801a5cc
 source/groundcontrol_assets/data
 
 # archived files

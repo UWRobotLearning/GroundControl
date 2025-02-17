@@ -31,6 +31,7 @@ from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
+from groundcontrol_assets import GROUNDCONTROL_ASSETS_DATA_DIR
 import groundcontrol_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 
@@ -80,7 +81,7 @@ class MySceneCfg(InteractiveSceneCfg):
         prim_path="/World/skyLight",
         spawn=sim_utils.DomeLightCfg(
             intensity=750.0,
-            texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
+            texture_file=f"{GROUNDCONTROL_ASSETS_DATA_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
 

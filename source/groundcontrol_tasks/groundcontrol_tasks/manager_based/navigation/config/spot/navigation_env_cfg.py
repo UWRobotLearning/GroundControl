@@ -20,7 +20,8 @@ from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
-from groundcontrol import GROUNDCONTROL_EXT_DIR
+from groundcontrol_assets import GROUNDCONTROL_ASSETS_DATA_DIR
+from groundcontrol_assets.worlds.gracesquarters import is_missing_world_USD_file
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.flat_env_cfg import SpotFlatEnvCfg
 from groundcontrol.sensors.camera import TiledCameraCfg #TODO: migrate to IsaacLab cameras when ready
@@ -88,6 +89,7 @@ class ObservationsCfg:
         # TODO: add more cameras later
         # TODO: note that cameras are not within HighLevelPolicyCfg, this is because the policy does not depend on camera atm 
         # TODO: these cameras do not need to be in the ObservationCfg for them to be accessed in the GUI, the only need to be in self.scene
+
     # observation groups
     policy: HighlevelPolicyCfg = HighlevelPolicyCfg()
     perception: PerceptionCfg = PerceptionCfg()
@@ -203,8 +205,17 @@ class NavigationEnvCfg(SpotFlatEnvCfg):
 @configclass
 class NavigationEnvCfg_PLAY(NavigationEnvCfg):
     def __post_init__(self) -> None:
+
+        if is_missing_world_USD_file():
+            raise FileNotFoundError(
+                "World USD file is missing. Please run 'python scripts/update_assets' to download the file."
+            )
+
         # post init of parent
         super().__post_init__()
+
+        # set debug in aciton policy to false
+        self.actions.pre_trained_policy_action.debug_vis = False
 
         # make a smaller scene for play
         self.scene.num_envs = 50
@@ -224,7 +235,7 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 pos=(0,0,-5)
             ),
             spawn=sim_utils.UsdFileCfg(
-                usd_path="/home/simdev/WRK/00_USD/Collected_GQ_lite/GQ_lite.usd",
+                usd_path=f"{GROUNDCONTROL_ASSETS_DATA_DIR}/Worlds/Collected_GQ_lite/GQ_lite.usd",
                 scale=(0.01, 0.01, 0.01),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     kinematic_enabled=True,

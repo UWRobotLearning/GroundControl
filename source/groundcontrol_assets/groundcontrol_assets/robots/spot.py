@@ -1,4 +1,5 @@
-# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2025, The GroundControl Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -12,6 +13,7 @@ The following configuration parameters are available:
 """
 
 import torch
+import os
 
 # Note: These are imported from Isaac Lab, not GroundControl. If you customize them, ensure you are importing
 # from the child (GroundControl)
@@ -21,6 +23,7 @@ from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
+from groundcontrol_assets import GROUNDCONTROL_ASSETS_DATA_DIR
 
 # Note: This data was collected by the Boston Dynamics AI Institute.
 joint_parameter_lookup = torch.tensor([
@@ -136,10 +139,20 @@ and the output torque (N*m). It is used to interpolate the output torque based o
 # Configuration
 ##
 
+def is_missing_robot_USD_file():
+    """Check if the world USD file is missing."""
+    spot_path = os.path.join(GROUNDCONTROL_ASSETS_DATA_DIR, "Robots", "BostonDynamics", "spot", "spot.usd")
+    return not os.path.exists(spot_path)
+
+if is_missing_robot_USD_file():
+    raise FileNotFoundError(
+        "Robot USD file is missing. Please run 'python scripts/update_assets' to download the file."
+    )
 
 SPOT_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/BostonDynamics/spot/spot.usd",
+        #usd_path=f"{GROUNDCONTROL_ASSETS_DATA_DIR}/Robots/BostonDynamics/spot/spot.usd", # TODO: swap to this if "GC_LOCAL_DATA" set
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
