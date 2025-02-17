@@ -25,6 +25,7 @@ python source/standalone/environments/teleoperation/teleop_se2_agent.py --task I
 
 ### VSCode Debug 
 Create a .vscode/launch.json by following these steps:
+
 https://isaac-sim.github.io/IsaacLab/main/source/overview/developer-guide/vs_code.html
 
 ```
