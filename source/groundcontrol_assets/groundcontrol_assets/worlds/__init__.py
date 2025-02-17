@@ -3,3 +3,8 @@
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+##
+# Configuration for different assets.
+##
+from .gracesquarters import *
