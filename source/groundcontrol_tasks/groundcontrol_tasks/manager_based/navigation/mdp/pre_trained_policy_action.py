@@ -9,6 +9,7 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 from huggingface_hub import hf_hub_download
+from dataclasses import MISSING
 
 import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation
