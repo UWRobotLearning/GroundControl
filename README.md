@@ -18,7 +18,10 @@ pip install -e groundcontrol_tasks
 ### Run Teleop Example
 ```bash
 # Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
-python source/standalone/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
+
+# Download assets
+python scripts/update_assets.py
+python scripts/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
 ```
 
 
