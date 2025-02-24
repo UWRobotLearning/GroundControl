@@ -17,6 +17,9 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 #from isaaclab.sensors.camera import TiledCameraCfg
+from isaaclab.assets import AssetBaseCfg
+import isaaclab.sim as sim_utils
+
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
@@ -25,6 +28,7 @@ from groundcontrol_assets.worlds.gracesquarters import is_missing_world_USD_file
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.flat_env_cfg import SpotFlatEnvCfg
 from groundcontrol.sensors.camera import TiledCameraCfg #TODO: migrate to IsaacLab cameras when ready
+from groundcontrol_scenarios.barrel_test import BarrelTestScenarioCfg
 
 LOW_LEVEL_ENV_CFG = SpotFlatEnvCfg()
 
@@ -226,9 +230,6 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
         # Episode Termination Length
         self.episode_length_s = 20.0
 
-        from isaaclab.assets import AssetBaseCfg
-        import isaaclab.sim as sim_utils
-
         self.scene.terrain = AssetBaseCfg(
             prim_path="/World/Ground",
             init_state=AssetBaseCfg.InitialStateCfg(
@@ -243,3 +244,6 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 # collision_props=sim_utils.CollisionPropertiesCfg()
             ),
         )
+
+        self.scene.barrel = BarrelTestScenarioCfg().scene.barrel
+    
