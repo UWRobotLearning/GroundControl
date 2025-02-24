@@ -22,10 +22,10 @@ from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 # ===== GroundControl imports === VVV
 from groundcontrol import GROUNDCONTROL_EXT_DIR
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
-from groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.flat_env_cfg import SpotFlatEnvCfg
+from groundcontrol_tasks.manager_based.locomotion.velocity.config.go2.flat_env_cfg import Go2FlatEnvCfg
 from groundcontrol.sensors.camera import TiledCameraCfg #TODO: migrate to IsaacLab cameras when ready
 
-LOW_LEVEL_ENV_CFG = SpotFlatEnvCfg()
+LOW_LEVEL_ENV_CFG = Go2FlatEnvCfg()
 
 @configclass
 class EventCfg:
@@ -63,7 +63,6 @@ class ActionsCfg:
 @configclass
 class ObservationsCfg:
     """Observation specifications for the MDP."""
-
     @configclass
     class HighlevelPolicyCfg(ObsGroup):
         """Observations for policy group."""
@@ -73,10 +72,17 @@ class ObservationsCfg:
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
 
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
-
     @configclass
-    class PerceptionCfg(ObsGroup):
-        concatenate_terms = False
+    class RosSensorsCfg(ObsGroup):
+        lidar = ObsTerm(
+            func=mdp.height_scan, params={"sensor_cfg": SceneEntityCfg("lidar")}
+        )
+        def __post_init__(self):
+            self.concatenate_terms = False
+
+    # @configclass
+    # class PerceptionCfg(ObsGroup):
+    #     concatenate_terms = False
         # rgb_camera = ObsTerm(
         #     func=mdp.isaac_camera_data,
         #     params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
@@ -90,7 +96,8 @@ class ObservationsCfg:
         # TODO: these cameras do not need to be in the ObservationCfg for them to be accessed in the GUI, the only need to be in self.scene
     # observation groups
     policy: HighlevelPolicyCfg = HighlevelPolicyCfg()
-    perception: PerceptionCfg = PerceptionCfg()
+    SensorObs: RosSensorsCfg = RosSensorsCfg()
+    # perception: PerceptionCfg = PerceptionCfg()
 
 
 @configclass
@@ -152,12 +159,12 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="body"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base_link"), "threshold": 1.0},
     )
-#Note: For Spot, the body name is "body" rather than "base".
+#Note: For Go2, the body name is "base_link" rather than "base".
 
 @configclass
-class NavigationEnvCfg(SpotFlatEnvCfg):
+class NavigationEnvCfg(Go2FlatEnvCfg):
     # Note: We need to override SceneEntityCfg to have the correct fields to add the camera
     #scene: SceneEntityCfg = NavigationSceneEntityCfg()
     scene: SceneEntityCfg = LOW_LEVEL_ENV_CFG.scene
@@ -187,18 +194,18 @@ class NavigationEnvCfg(SpotFlatEnvCfg):
             self.scene.contact_forces.update_period = self.sim.dt
         # NOTE: for the moment, the camera is added in the post_init of NavigationEnvCfg
         # We can create a MySceneEntityCfg class for the NavigationEnvCfg as well instead
-        self.scene.rgb_camera = TiledCameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
-            update_period=0.0,
-            height=64,
-            width=64,
-            data_types=["rgb"],
-            spawn=PinholeCameraCfg(),
-            offset=TiledCameraCfg.OffsetCfg(
-                pos=(-0.2, 0, 0.2),
-                rot=(0.5, -0.5, 0.5, -0.5),
-            ),
-        )
+        # self.scene.rgb_camera = TiledCameraCfg(
+        #     prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
+        #     update_period=0.0,
+        #     height=64,
+        #     width=64,
+        #     data_types=["rgb"],
+        #     spawn=PinholeCameraCfg(),
+        #     offset=TiledCameraCfg.OffsetCfg(
+        #         pos=(-0.2, 0, 0.2),
+        #         rot=(0.5, -0.5, 0.5, -0.5),
+        #     ),
+        # )
 
 @configclass
 class NavigationEnvCfg_PLAY(NavigationEnvCfg):

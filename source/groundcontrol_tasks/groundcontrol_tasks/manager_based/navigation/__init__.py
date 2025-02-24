@@ -7,3 +7,4 @@
 """Navigation environments."""
 
 from .config import spot 
+from .config import go2

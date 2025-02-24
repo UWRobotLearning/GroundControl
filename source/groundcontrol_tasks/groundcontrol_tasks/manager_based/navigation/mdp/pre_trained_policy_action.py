@@ -7,9 +7,9 @@
 from __future__ import annotations
 
 import torch
+from dataclasses import MISSING, dataclass
 from typing import TYPE_CHECKING
 from huggingface_hub import hf_hub_download
-from dataclasses import MISSING
 
 import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation
@@ -44,11 +44,8 @@ class PreTrainedPolicyAction(ActionTerm):
         self.robot: Articulation = env.scene[cfg.asset_name]
 
         # load policy
-        try:
-            file_from_hf = hf_hub_download(repo_id=cfg.policy_path, filename="policy.pt")
-            file_bytes = read_file(file_from_hf)
-        except:
-            raise ValueError(f"Failed to download policy from {cfg.policy_path}.")
+        file_from_hf = hf_hub_download(repo_id=cfg.policy_path, filename="policy.pt")
+        file_bytes = read_file(file_from_hf)
 
         # This is the Low-Level Policy which is being controlled by the Upper-Level Policy
         self.policy = torch.jit.load(file_bytes).to(env.device).eval()

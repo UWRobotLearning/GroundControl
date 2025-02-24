@@ -15,18 +15,19 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.sensors import RayCasterCfg, patterns
 
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
-import groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.mdp as spot_mdp
+import groundcontrol_tasks.manager_based.locomotion.velocity.config.go2.mdp as go2_mdp
 import groundcontrol_tasks.manager_based.locomotion.velocity.mdp as mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
 
 ##
 # Pre-defined configs
 ##
-from amrl_assets.robots.spot import SPOT_CFG  # isort: skip
+from amrl_assets.robots.unitree import UNITREE_GO2_CFG  # isort: skip
 
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
@@ -49,14 +50,14 @@ COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
 
 
 @configclass
-class SpotActionsCfg:
+class Go2ActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.2, use_default_offset=True)
 
 
 @configclass
-class SpotCommandsCfg:
+class Go2CommandsCfg:
     """Command specifications for the MDP."""
 
     base_velocity = mdp.UniformVelocityCommandCfg(
@@ -65,7 +66,7 @@ class SpotCommandsCfg:
         rel_standing_envs=0.1,
         rel_heading_envs=0.0,
         heading_command=False,
-        debug_vis=True,
+        debug_vis=False,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(-2.0, 3.0), lin_vel_y=(-1.5, 1.5), ang_vel_z=(-2.0, 2.0)
         ),
@@ -73,7 +74,7 @@ class SpotCommandsCfg:
 
 
 @configclass
-class SpotObservationsCfg:
+class Go2ObservationsCfg:
     """Observation specifications for the MDP."""
 
     @configclass
@@ -105,12 +106,13 @@ class SpotObservationsCfg:
             self.enable_corruption = False
             self.concatenate_terms = True
 
+
     # observation groups
     policy: PolicyCfg = PolicyCfg()
 
 
 @configclass
-class SpotEventCfg:
+class Go2EventCfg:
     """Configuration for randomization."""
 
     # startup
@@ -130,7 +132,7 @@ class SpotEventCfg:
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="body"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "mass_distribution_params": (-2.5, 2.5),
             "operation": "add",
         },
@@ -141,7 +143,7 @@ class SpotEventCfg:
         func=mdp.apply_external_force_torque,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="body"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "force_range": (0.0, 0.0),
             "torque_range": (-0.0, 0.0),
         },
@@ -165,7 +167,7 @@ class SpotEventCfg:
     )
 
     reset_robot_joints = EventTerm(
-        func=spot_mdp.reset_joints_around_default,
+        func=go2_mdp.reset_joints_around_default,
         mode="reset",
         params={
             "position_range": (-0.2, 0.2),
@@ -187,10 +189,10 @@ class SpotEventCfg:
 
 
 @configclass
-class SpotRewardsCfg:
+class Go2RewardsCfg:
     # -- task
     air_time = RewardTermCfg(
-        func=spot_mdp.air_time_reward,
+        func=go2_mdp.air_time_reward,
         weight=5.0,
         params={
             "mode_time": 0.3,
@@ -200,17 +202,17 @@ class SpotRewardsCfg:
         },
     )
     base_angular_velocity = RewardTermCfg(
-        func=spot_mdp.base_angular_velocity_reward,
+        func=go2_mdp.base_angular_velocity_reward,
         weight=5.0,
         params={"std": 2.0, "asset_cfg": SceneEntityCfg("robot")},
     )
     base_linear_velocity = RewardTermCfg(
-        func=spot_mdp.base_linear_velocity_reward,
+        func=go2_mdp.base_linear_velocity_reward,
         weight=5.0,
         params={"std": 1.0, "ramp_rate": 0.5, "ramp_at_vel": 1.0, "asset_cfg": SceneEntityCfg("robot")},
     )
     foot_clearance = RewardTermCfg(
-        func=spot_mdp.foot_clearance_reward,
+        func=go2_mdp.foot_clearance_reward,
         weight=0.5,
         params={
             "std": 0.05,
@@ -220,33 +222,33 @@ class SpotRewardsCfg:
         },
     )
     gait = RewardTermCfg(
-        func=spot_mdp.GaitReward,
+        func=go2_mdp.GaitReward,
         weight=10.0,
         params={
             "std": 0.1,
             "max_err": 0.2,
             "velocity_threshold": 0.5,
-            "synced_feet_pair_names": (("fl_foot", "hr_foot"), ("fr_foot", "hl_foot")),
+            "synced_feet_pair_names": (("FL_foot", "RR_foot"), ("FR_foot", "RL_foot")),
             "asset_cfg": SceneEntityCfg("robot"),
             "sensor_cfg": SceneEntityCfg("contact_forces"),
         },
     )
 
     # -- penalties
-    action_smoothness = RewardTermCfg(func=spot_mdp.action_smoothness_penalty, weight=-1.0)
+    action_smoothness = RewardTermCfg(func=go2_mdp.action_smoothness_penalty, weight=-1.0)
     air_time_variance = RewardTermCfg(
-        func=spot_mdp.air_time_variance_penalty,
+        func=go2_mdp.air_time_variance_penalty,
         weight=-1.0,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot")},
     )
     base_motion = RewardTermCfg(
-        func=spot_mdp.base_motion_penalty, weight=-2.0, params={"asset_cfg": SceneEntityCfg("robot")}
+        func=go2_mdp.base_motion_penalty, weight=-2.0, params={"asset_cfg": SceneEntityCfg("robot")}
     )
     base_orientation = RewardTermCfg(
-        func=spot_mdp.base_orientation_penalty, weight=-3.0, params={"asset_cfg": SceneEntityCfg("robot")}
+        func=go2_mdp.base_orientation_penalty, weight=-3.0, params={"asset_cfg": SceneEntityCfg("robot")}
     )
     foot_slip = RewardTermCfg(
-        func=spot_mdp.foot_slip_penalty,
+        func=go2_mdp.foot_slip_penalty,
         weight=-0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_foot"),
@@ -255,12 +257,12 @@ class SpotRewardsCfg:
         },
     )
     joint_acc = RewardTermCfg(
-        func=spot_mdp.joint_acceleration_penalty,
+        func=go2_mdp.joint_acceleration_penalty,
         weight=-1.0e-4,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*_h[xy]")},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*[RL]_*")},
     )
     joint_pos = RewardTermCfg(
-        func=spot_mdp.joint_position_penalty,
+        func=go2_mdp.joint_position_penalty,
         weight=-0.7,
         params={
             "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
@@ -269,25 +271,25 @@ class SpotRewardsCfg:
         },
     )
     joint_torques = RewardTermCfg(
-        func=spot_mdp.joint_torques_penalty,
+        func=go2_mdp.joint_torques_penalty,
         weight=-5.0e-4,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")},
     )
     joint_vel = RewardTermCfg(
-        func=spot_mdp.joint_velocity_penalty,
+        func=go2_mdp.joint_velocity_penalty,
         weight=-1.0e-2,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*_h[xy]")},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*[RL]_*")},
     )
 
 
 @configclass
-class SpotTerminationsCfg:
+class Go2TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     body_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["body", ".*leg"]), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["base_link", ".*leg"]), "threshold": 1.0},
     )
     terrain_out_of_bounds = DoneTerm(
         func=mdp.terrain_out_of_bounds,
@@ -297,28 +299,27 @@ class SpotTerminationsCfg:
 
 
 @configclass
-class SpotCurriculumCfg:
+class Go2CurriculumCfg:
     """Curriculum terms for the MDP."""
 
     pass
 
 
 @configclass
-class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
-
+class Go2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
     # Basic settings'
-    observations: SpotObservationsCfg = SpotObservationsCfg()
-    actions: SpotActionsCfg = SpotActionsCfg()
-    commands: SpotCommandsCfg = SpotCommandsCfg()
+    observations: Go2ObservationsCfg = Go2ObservationsCfg()
+    actions: Go2ActionsCfg = Go2ActionsCfg()
+    commands: Go2CommandsCfg = Go2CommandsCfg()
 
     # MDP setting
-    rewards: SpotRewardsCfg = SpotRewardsCfg()
-    terminations: SpotTerminationsCfg = SpotTerminationsCfg()
-    events: SpotEventCfg = SpotEventCfg()
-    curriculum: SpotCurriculumCfg = SpotCurriculumCfg()
+    rewards: Go2RewardsCfg = Go2RewardsCfg()
+    terminations: Go2TerminationsCfg = Go2TerminationsCfg()
+    events: Go2EventCfg = Go2EventCfg()
+    curriculum: Go2CurriculumCfg = Go2CurriculumCfg()
 
     # Viewer
-    viewer = ViewerCfg(eye=(10.5, 10.5, 0.3), origin_type="world", env_index=0, asset_name="robot")
+    viewer = ViewerCfg(eye=(10.5, 10.5, 10.0), origin_type="world", env_index=0, asset_name="robot")
 
     def __post_init__(self):
         # post init of parent
@@ -339,8 +340,8 @@ class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         # we tick all the sensors based on the smallest update period (physics update period)
         self.scene.contact_forces.update_period = self.sim.dt
 
-        # switch robot to Spot-d
-        self.scene.robot = SPOT_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        # switch robot to Go2
+        self.scene.robot = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
         # terrain
         self.scene.terrain = TerrainImporterCfg(
@@ -360,14 +361,14 @@ class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
                 project_uvw=True,
                 texture_scale=(0.25, 0.25),
             ),
-            debug_vis=True,
+            debug_vis=False,
         )
 
         # no height scan
         self.scene.height_scanner = None
 
 
-class SpotFlatEnvCfg_PLAY(SpotFlatEnvCfg):
+class Go2FlatEnvCfg_PLAY(Go2FlatEnvCfg):
     def __post_init__(self) -> None:
         # post init of parent
         super().__post_init__()
