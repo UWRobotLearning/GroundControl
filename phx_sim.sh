@@ -1,0 +1,1 @@
+./isaaclab.sh -p scripts/environments/teleoperation/teleop_se2_agent_ROS2.py --task Isaac-Navigation-Flat-Go2-Play-v0 --num_envs 1 --teleop_device keyboard --sensitivity 2 --enable_cameras
