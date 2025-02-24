@@ -318,7 +318,7 @@ class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
     curriculum: SpotCurriculumCfg = SpotCurriculumCfg()
 
     # Viewer
-    viewer = ViewerCfg(eye=(10.5, 10.5, 0.3), origin_type="world", env_index=0, asset_name="robot")
+    viewer = ViewerCfg(eye=(10.5, 10.5, 3.0), origin_type="world", env_index=0, asset_name="robot")
 
     def __post_init__(self):
         # post init of parent
