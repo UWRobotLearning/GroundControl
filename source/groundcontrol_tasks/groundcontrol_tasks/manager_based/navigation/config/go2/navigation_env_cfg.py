@@ -22,6 +22,7 @@ from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 # ===== GroundControl imports === VVV
 from groundcontrol import GROUNDCONTROL_EXT_DIR
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
+import isaaclab_ros.mdp as ros_mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.go2.flat_env_cfg import Go2FlatEnvCfg
 from groundcontrol.sensors.camera import TiledCameraCfg #TODO: migrate to IsaacLab cameras when ready
 
@@ -75,7 +76,7 @@ class ObservationsCfg:
     @configclass
     class RosSensorsCfg(ObsGroup):
         lidar = ObsTerm(
-            func=mdp.height_scan, params={"sensor_cfg": SceneEntityCfg("lidar")}
+            func=ros_mdp.lidar, params={"sensor_cfg": SceneEntityCfg("lidar")}
         )
         def __post_init__(self):
             self.concatenate_terms = False

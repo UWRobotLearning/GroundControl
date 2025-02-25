@@ -3,6 +3,7 @@ import numpy as np
 # ROS2 imports
 import rclpy
 from rclpy.node import Node
+import ros2_numpy
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan, PointCloud2, PointField
 import tf2_ros as tf2
@@ -35,10 +36,10 @@ class LidarPublisher(Node):
         self.tf_listener = tf2.TransformListener(self.tf_buffer, self)
 
     def publish_pointcloud(self, lidar_points):
-        # points = self._transform_to_base(lidar_points)
+        lidar_points = self._process_cloud(lidar_points)
         msg = PointCloud2()
         msg.header.frame_id = "base_link"
-        msg.header.stamp = self.get_clock().now().to_msg()
+        # msg.header.stamp = self.get_clock().now().to_msg()
         msg.height = 1
         msg.width = len(lidar_points)
         msg.fields = [
@@ -47,15 +48,24 @@ class LidarPublisher(Node):
             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1)
         ]
         msg.is_bigendian = False
-        msg.point_step = 16
-        msg.row_step = 16 * len(lidar_points)
+        msg.point_step = 12
+        msg.row_step = 12 * len(lidar_points)
         msg.is_dense = True
+        # cloud = ros2_numpy.point_cloud2.dict_to_point_cloud2(points, frame_id= "base_link")
         msg.data = np.array(lidar_points).tobytes()
         self.publisher_.publish(msg)
 
     ## TODO: Implement this function
     def publish_laserscan(self, lidar_cfg, scene):
         return
+
+    def _process_cloud(self, lidar_points):
+        '''
+        Reshapes flattened cloud into Nx3
+        TODO: Potentially add functionality for 'rgb' and 'intensity' fields
+        '''
+        return lidar_points.reshape(int(len(lidar_points)/3), -1)
+    
 
     # def _transform_to_base(self, points, source_frame: str = "go2/map", traget_frame: str = "base_link"):
     #     transformed_points = []

@@ -40,5 +40,5 @@ class IsaacLabRos(Node):
         
     def publish(self, sensor_obs):
         self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
-        self.lidar_pub.publish_pointcloud(sensor_obs["lidar"].cpu().numpy())
+        self.lidar_pub.publish_pointcloud(sensor_obs["lidar"][0].cpu().numpy())
         # self.imu_pub.publish_imu(self.robot_orientation, self.robot_ang_vel, self.robot_acc_w)
