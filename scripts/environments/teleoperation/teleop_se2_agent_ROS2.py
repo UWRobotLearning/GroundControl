@@ -53,7 +53,15 @@ import groundcontrol_tasks  # noqa: F401
 # enable ROS2 bridge extension
 import omni.kit.app
 ext_manager = omni.kit.app.get_app().get_extension_manager()
-ext_manager.set_extension_enabled_immediate("omni.isaac.ros2_bridge", True)
+ext_manager.set_extension_enabled_immediate("isaacsim.ros2.bridge", True)
+
+import omni.kit.app
+ext_manager = omni.kit.app.get_app().get_extension_manager()
+ext_manager.set_extension_enabled_immediate("isaacsim.util.merge_mesh", True)
+
+import omni.usd
+import isaacsim.core.utils.prims as prim_utils
+from isaacsim.util.merge_mesh import MeshMerger
 
 from isaaclab_ros import IsaacLabRos, IsaacLabRosCfg
 
@@ -118,6 +126,20 @@ def main():
 
     # base_command = torch.zeros(3)
     # add_cmd_sub()
+    # print(env.unwrapped.stage)
+    # stage = omni.usd.get_context().get_stage()
+    # # print(stage.GetPrimAtPath("/World/Ground/GQ_Meshes/GraciesQuartersCombinedScaledUp_default1/GraciesQuartersCombinedScaledUp_default1"))
+    # meshes_to_merge = ["/World/Ground/GQ_Meshes/GraciesQuartersCombinedScaledUp_default1/GraciesQuartersCombinedScaledUp_default1",
+    #             "/World/Ground/GQ_Meshes/GraciesQuartersCombinedScaledUp_sHORTY_original_frame1/GraciesQuartersCombinedScaledUp_sHORTY_original_frame1"]
+
+    # mm = MeshMerger(stage)
+    # mm.clear_parent_xform = False
+    # mm.deactivate_sources = False
+    # mm.combine_materials = False
+    # mm.materials_destination = "/Merged/test_mesh/"
+    # mm.update_selection(selection=meshes_to_merge, stage=stage)
+    # mm.output_mesh = '/Merged/test_mesh'
+    # mm.merge_meshes()
 
     obs, extras = env.get_observations()
 
@@ -142,7 +164,7 @@ def main():
 
             # apply actions
             _, _, _, extras = env.step(base_command)
-            sensor_obs = extras["observations"]["SensorObs"]
+            sensor_obs = extras["observations"]["RosSensorObs"]
             node.publish(sensor_obs)
     # close the simulator
     env.close()

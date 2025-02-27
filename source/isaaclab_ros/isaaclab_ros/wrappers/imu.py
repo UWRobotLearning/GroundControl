@@ -10,16 +10,16 @@ class ImuPublisher(Node):
         # Create publisher to odom
         self.odom_pub = self.create_publisher(Imu, f'{ns}/imu/data', 10)
     
-    def publish_imu(self, quat, ang_vel, acc):
+    def publish_imu(self, imu_obs):
         msg = Imu()
-        msg.orientation.x = float(quat[1])
-        msg.orientation.y = float(quat[2])
-        msg.orientation.z = float(quat[3])
-        msg.orientation.w = float(quat[0])
-        msg.angular_velocity.x = float(ang_vel[0]) 
-        msg.angular_velocity.y = float(ang_vel[1])
-        msg.angular_velocity.z = float(ang_vel[2])
-        msg.linear_acceleration.x = float(acc[0])
-        msg.linear_acceleration.y = float(acc[1])
-        msg.linear_acceleration.z = float(acc[2])
+        msg.orientation.x = float(imu_obs[1])
+        msg.orientation.y = float(imu_obs[2])
+        msg.orientation.z = float(imu_obs[3])
+        msg.orientation.w = float(imu_obs[0])
+        msg.angular_velocity.x = float(imu_obs[4]) 
+        msg.angular_velocity.y = float(imu_obs[5])
+        msg.angular_velocity.z = float(imu_obs[6])
+        msg.linear_acceleration.x = float(imu_obs[7])
+        msg.linear_acceleration.y = float(imu_obs[8])
+        msg.linear_acceleration.z = float(imu_obs[9])
         self.odom_pub.publish(msg)

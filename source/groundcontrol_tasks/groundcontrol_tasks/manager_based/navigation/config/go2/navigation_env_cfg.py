@@ -78,27 +78,24 @@ class ObservationsCfg:
         lidar = ObsTerm(
             func=ros_mdp.lidar, params={"sensor_cfg": SceneEntityCfg("lidar")}
         )
+        rgb_image = ObsTerm(
+            func=ros_mdp.image, params={"sensor_cfg": SceneEntityCfg("realsense"), "data_type": "rgb"}
+        )
+        depth_image = ObsTerm(
+            func=ros_mdp.image, params={"sensor_cfg": SceneEntityCfg("realsense"), "data_type": "depth"}
+        )
+        imu = ObsTerm(
+            func=ros_mdp.imu
+        )
         def __post_init__(self):
             self.concatenate_terms = False
 
-    # @configclass
-    # class PerceptionCfg(ObsGroup):
-    #     concatenate_terms = False
-        # rgb_camera = ObsTerm(
-        #     func=mdp.isaac_camera_data,
-        #     params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
-        # )
-        #rgb_camera2 = ObsTerm(
-        #    func=mdp.isaac_camera_data,
-        #    params={"sensor_cfg": SceneEntityCfg("rgb_camera"), "data_type": "rgb"},
-        #)
         # TODO: add more cameras later
         # TODO: note that cameras are not within HighLevelPolicyCfg, this is because the policy does not depend on camera atm 
         # TODO: these cameras do not need to be in the ObservationCfg for them to be accessed in the GUI, the only need to be in self.scene
     # observation groups
     policy: HighlevelPolicyCfg = HighlevelPolicyCfg()
-    SensorObs: RosSensorsCfg = RosSensorsCfg()
-    # perception: PerceptionCfg = PerceptionCfg()
+    RosSensorObs: RosSensorsCfg = RosSensorsCfg()
 
 
 @configclass

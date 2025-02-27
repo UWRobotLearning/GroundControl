@@ -32,10 +32,6 @@ REALSENSE_D455_ROS_CFG = CameraROSCfg(
     width=1280,
     height=720,
     debug_vis=True,
-    imu=ImuROSCfg(
-        message_type="sensor_msgs/imu",
-        topic_name="realsense_d455/imu",
-    ),
 )
 """Configuration for Realsense D455 RGBD Camera for ROS2 as a :class:`CameraROSCfg`.
 

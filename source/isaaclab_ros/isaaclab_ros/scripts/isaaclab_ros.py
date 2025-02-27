@@ -4,7 +4,7 @@ import tf2_ros as tf2
 from geometry_msgs.msg import Twist, PointStamped
 
 from ..config import IsaacLabRosCfg
-from ..wrappers import LidarPublisher, OdomPublisher, ImuPublisher
+from ..wrappers import LidarPublisher, OdomPublisher, ImuPublisher, ImagePublisher
 
 class IsaacLabRos(Node):
     def __init__(self,
@@ -24,6 +24,7 @@ class IsaacLabRos(Node):
         # Create subscriber to cmd_vel
         self.create_subscription(Twist, 'go2/cmd_vel', self.cmd_vel_cb, 10)
 
+        self.image_pub = ImagePublisher(ns=ns)
         self.imu_pub = ImuPublisher(ns=ns)
         self.odom_pub = OdomPublisher(ns=ns)
         self.lidar_pub = LidarPublisher(lidar_cfg=self.isaaclab_ros_cfg.lidar, ns=ns)
@@ -41,4 +42,6 @@ class IsaacLabRos(Node):
     def publish(self, sensor_obs):
         self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
         self.lidar_pub.publish_pointcloud(sensor_obs["lidar"][0].cpu().numpy())
-        # self.imu_pub.publish_imu(self.robot_orientation, self.robot_ang_vel, self.robot_acc_w)
+        self.imu_pub.publish_imu(sensor_obs["imu"][0].cpu().numpy())
+        # self.image_pub.publish_depth(sensor_obs["depth_image"].cpu().numpy())
+        self.image_pub.publish_rgb(sensor_obs["rgb_image"].cpu().numpy())
