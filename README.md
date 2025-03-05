@@ -48,5 +48,3 @@ https://isaac-sim.github.io/IsaacLab/main/source/overview/developer-guide/vs_cod
       "console": "integratedTerminal"
   }
 ```
-
-This is the recommended 
