@@ -224,8 +224,8 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 pos=(0,0,-5)
             ),
             spawn=sim_utils.UsdFileCfg(
-                usd_path="/home/mtr/dev/IsaacSim/scenes/Collected_GQ_lite/GQ_lite.usd",
-                scale=(0.01, 0.01, 0.01),
+                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_lite/GQ_lite_scaled.usd",
+                # scale=(0.01, 0.01, 0.01),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     kinematic_enabled=True,
                 ),

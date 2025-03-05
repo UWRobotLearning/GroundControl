@@ -16,7 +16,6 @@ class IsaacLabRos(Node):
         self.isaaclab_ros_cfg = isaac_lab_ros_cfg
         ns = self.isaaclab_ros_cfg.name
         self.get_robot_data(scene)
-        # self.get_sensor_data(obs)
 
         # Initialize base_command variable
         self.cmd_vel = [0.0, 0.0, 0.0]
@@ -26,7 +25,6 @@ class IsaacLabRos(Node):
 
         self.imu_pub = ImuPublisher(ns=ns)
         self.odom_pub = OdomPublisher(ns=ns)
-        self.lidar_pub = LidarPublisher(lidar_cfg=self.isaaclab_ros_cfg.lidar, ns=ns)
     
     def cmd_vel_cb(self, msg):
         """Callback function that updates base_command when a new Twist message is received."""
@@ -38,7 +36,7 @@ class IsaacLabRos(Node):
         self.robot_lin_vel = scene._articulations["robot"]._data.root_lin_vel_b[0]
         self.robot_ang_vel = scene._articulations["robot"]._data.root_ang_vel_b[0]
         
-    def publish(self, sensor_obs):
+    def publish(self):
+        # pass
         self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
-        self.lidar_pub.publish_pointcloud(sensor_obs["lidar"].cpu().numpy())
-        # self.imu_pub.publish_imu(self.robot_orientation, self.robot_ang_vel, self.robot_acc_w)
+

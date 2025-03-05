@@ -86,7 +86,8 @@ def main():
     RosCfg = IsaacLabRosCfg(
         name = "go2",
         platform = "go2",
-        lidar = env_cfg.scene.lidar)
+        # lidar = env_cfg.scene.lidar
+        )
 
     # create controller
     if args_cli.teleop_device.lower() == "keyboard":
@@ -142,8 +143,8 @@ def main():
 
             # apply actions
             _, _, _, extras = env.step(base_command)
-            sensor_obs = extras["observations"]["SensorObs"]
-            node.publish(sensor_obs)
+            # sensor_obs = extras["observations"]["SensorObs"]
+            node.publish()
     # close the simulator
     env.close()
 

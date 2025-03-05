@@ -1,0 +1,264 @@
+--- git status ---
+On branch mtr/isaaclab_ros
+Your branch is up to date with 'origin/mtr/isaaclab_ros'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   source/groundcontrol_assets/groundcontrol_assets/__init__.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/__init__.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/agents/rsl_rl_ppo_cfg.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/spot/flat_env_cfg.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/velocity_env_cfg.py
+	modified:   source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py
+	modified:   source/isaaclab_ros/isaaclab_ros/wrappers/lidar.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	logs/
+	outputs/
+	scripts/rsl_rl/
+	source/groundcontrol_assets/groundcontrol_assets/unitree.py
+	source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/rough_env_cfg.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/source/groundcontrol_assets/groundcontrol_assets/__init__.py b/source/groundcontrol_assets/groundcontrol_assets/__init__.py
+index 4283b59..8798bca 100644
+--- a/source/groundcontrol_assets/groundcontrol_assets/__init__.py
++++ b/source/groundcontrol_assets/groundcontrol_assets/__init__.py
+@@ -26,3 +26,4 @@ __version__ = GROUNDCONTROL_ASSETS_METADATA["package"]["version"]
+ # Configuration for different assets.
+ ##
+ from .spot import *
++from .unitree import *
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/__init__.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/__init__.py
+index 4a709f1..3f5b9ff 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/__init__.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/__init__.py
+@@ -6,7 +6,7 @@
+ 
+ import gymnasium as gym
+ 
+-from . import agents, flat_env_cfg
++from . import agents, flat_env_cfg, rough_env_cfg
+ 
+ ##
+ # Register Gym environments.
+@@ -31,3 +31,23 @@ gym.register(
+         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2FlatPPORunnerCfg",
+     },
+ )
++
++gym.register(
++    id="Isaac-Velocity-Rough-Go2-v0",
++    entry_point="isaaclab.envs:ManagerBasedRLEnv",
++    disable_env_checker=True,
++    kwargs={
++        "env_cfg_entry_point": rough_env_cfg.Go2RoughEnvCfg,
++        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2RoughPPORunnerCfg",
++    },
++)
++
++gym.register(
++    id="Isaac-Velocity-Rough-Go2-Play-v0",
++    entry_point="isaaclab.envs:ManagerBasedRLEnv",
++    disable_env_checker=True,
++    kwargs={
++        "env_cfg_entry_point": rough_env_cfg.Go2RoughEnvCfg_PLAY,
++        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:Go2RoughPPORunnerCfg",
++    },
++)
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/agents/rsl_rl_ppo_cfg.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/agents/rsl_rl_ppo_cfg.py
+index 5dbc63a..934d543 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/agents/rsl_rl_ppo_cfg.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/agents/rsl_rl_ppo_cfg.py
+@@ -42,3 +42,32 @@ class SpotFlatPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+         desired_kl=0.01,
+         max_grad_norm=1.0,
+     )
++    
++@configclass
++class Go2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
++    num_steps_per_env = 24
++    max_iterations = 20000
++    save_interval = 50
++    experiment_name = "go2_rough"
++    empirical_normalization = False
++    store_code_state = False
++    policy = RslRlPpoActorCriticCfg(
++        init_noise_std=1.0,
++        actor_hidden_dims=[512, 256, 128],
++        critic_hidden_dims=[512, 256, 128],
++        activation="elu",
++    )
++    algorithm = RslRlPpoAlgorithmCfg(
++        value_loss_coef=0.5,
++        use_clipped_value_loss=True,
++        clip_param=0.2,
++        entropy_coef=0.0025,
++        num_learning_epochs=5,
++        num_mini_batches=4,
++        learning_rate=1.0e-3,
++        schedule="adaptive",
++        gamma=0.99,
++        lam=0.95,
++        desired_kl=0.01,
++        max_grad_norm=1.0,
++    )
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+index c7a74d7..3d0c470 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/go2/flat_env_cfg.py
+@@ -27,7 +27,7 @@ from groundcontrol_tasks.manager_based.locomotion.velocity.velocity_env_cfg impo
+ ##
+ # Pre-defined configs
+ ##
+-from amrl_assets.robots.unitree import UNITREE_GO2_CFG  # isort: skip
++from groundcontrol_assets.unitree import UNITREE_GO2_CFG  # isort: skip
+ 
+ 
+ COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/spot/flat_env_cfg.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/spot/flat_env_cfg.py
+index d6c5bd1..ebf4d27 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/spot/flat_env_cfg.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/config/spot/flat_env_cfg.py
+@@ -26,7 +26,7 @@ from groundcontrol_tasks.manager_based.locomotion.velocity.velocity_env_cfg impo
+ ##
+ # Pre-defined configs
+ ##
+-from amrl_assets.robots.spot import SPOT_CFG  # isort: skip
++from groundcontrol_assets.spot import SPOT_CFG  # isort: skip
+ 
+ 
+ COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/velocity_env_cfg.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/velocity_env_cfg.py
+index ab6e5eb..f5187ac 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/velocity_env_cfg.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/locomotion/velocity/velocity_env_cfg.py
+@@ -71,21 +71,32 @@ class MySceneCfg(InteractiveSceneCfg):
+     robot: ArticulationCfg = MISSING
+     # sensors
+     height_scanner = RayCasterCfg(
+-        prim_path="{ENV_REGEX_NS}/Robot/base",
++        prim_path="{ENV_REGEX_NS}/Robot/base_link",
+         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
+         attach_yaw_only=True,
+         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
+         debug_vis=False,
+         mesh_prim_paths=["/World/ground"],
+     )
+-    lidar = VELODYNE_VLP_16_ROS_CFG.replace(sensor_name="lidar",
+-                                            message_type="PointCloud2",
+-                                            topic_name="lidar/points",
+-                                            prim_path="{ENV_REGEX_NS}/Robot/base_link",
+-                                            offset=RayCasterCfg.OffsetCfg(pos=(0.147, 0.0, 0.117)),
+-                                            # pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
+-                                            mesh_prim_paths=["/World/Ground/GQ_Meshes/GraciesQuartersCombinedScaledUp_default1/GraciesQuartersCombinedScaledUp_default1"],
+-                                            debug_vis=False)
++    # lidar = VELODYNE_VLP_16_ROS_CFG.replace(sensor_name="lidar",
++    #                                         message_type="PointCloud2",
++    #                                         topic_name="lidar/points",
++    #                                         prim_path="{ENV_REGEX_NS}/Robot/base_link",
++    #                                         offset=RayCasterCfg.OffsetCfg(pos=(0.147, 0.0, 0.117)),
++    #                                         # pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
++    #                                         mesh_prim_paths=["/World/ground"],
++    #                                         debug_vis=False)
++    # lidar = RayCasterCfg(
++    #     prim_path="{ENV_REGEX_NS}/Robot/base_link",
++    #     attach_yaw_only=False,
++    #     offset=RayCasterCfg.OffsetCfg(pos=(0.147, 0.0, 0.117)),
++    #     pattern_cfg=patterns.LidarPatternCfg(
++    #         channels=16, vertical_fov_range=(-15.0, 15.0), horizontal_fov_range=(-180.0, 180.0), horizontal_res=0.2
++    #     ),
++    #     debug_vis=True,
++    #     mesh_prim_paths=["/World/ground"],
++    #     max_distance=100,
++    # )
+     # realsense = REALSENSE_D455_ROS_CFG.replace(sensor_name="camera",
+     #                                 message_type="sensor_msgs/image",
+     #                                 topic_name="image",
+@@ -235,7 +246,7 @@ class EventCfg:
+         func=mdp.randomize_rigid_body_mass,
+         mode="startup",
+         params={
+-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
++            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+             "mass_distribution_params": (-5.0, 5.0),
+             "operation": "add",
+         },
+@@ -246,7 +257,7 @@ class EventCfg:
+         func=mdp.apply_external_force_torque,
+         mode="reset",
+         params={
+-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
++            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+             "force_range": (0.0, 0.0),
+             "torque_range": (-0.0, 0.0),
+         },
+@@ -307,7 +318,7 @@ class RewardsCfg:
+         func=mdp.feet_air_time,
+         weight=0.125,
+         params={
+-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
++            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*foot"),
+             "command_name": "base_velocity",
+             "threshold": 0.5,
+         },
+@@ -315,7 +326,7 @@ class RewardsCfg:
+     undesired_contacts = RewTerm(
+         func=mdp.undesired_contacts,
+         weight=-1.0,
+-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
++        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*thigh"), "threshold": 1.0},
+     )
+     # -- optional penalties
+     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
+@@ -329,7 +340,7 @@ class TerminationsCfg:
+     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+     base_contact = DoneTerm(
+         func=mdp.illegal_contact,
+-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
++        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base_link"), "threshold": 1.0},
+     )
+ 
+ 
+diff --git a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py
+index f17f73b..8349baf 100644
+--- a/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py
++++ b/source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py
+@@ -72,6 +72,7 @@ class ObservationsCfg:
+         projected_gravity = ObsTerm(func=mdp.projected_gravity)
+ 
+         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
++    
+     @configclass
+     class RosSensorsCfg(ObsGroup):
+         lidar = ObsTerm(
+@@ -231,8 +232,8 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
+                 pos=(0,0,-5)
+             ),
+             spawn=sim_utils.UsdFileCfg(
+-                usd_path="/home/mtr/dev/IsaacSim/scenes/Collected_GQ_lite/GQ_lite.usd",
+-                scale=(0.01, 0.01, 0.01),
++                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_lite/GQ_lite_scaled_v2.usd",
++                # scale=(0.01, 0.01, 0.01),
+                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                     kinematic_enabled=True,
+                 ),
+diff --git a/source/isaaclab_ros/isaaclab_ros/wrappers/lidar.py b/source/isaaclab_ros/isaaclab_ros/wrappers/lidar.py
+index e3680c7..2482939 100644
+--- a/source/isaaclab_ros/isaaclab_ros/wrappers/lidar.py
++++ b/source/isaaclab_ros/isaaclab_ros/wrappers/lidar.py
+@@ -48,7 +48,7 @@ class LidarPublisher(Node):
+         ]
+         msg.is_bigendian = False
+         msg.point_step = 16
+-        msg.row_step = 16 * len(lidar_points)
++        msg.row_step = msg.point_step * msg.width
+         msg.is_dense = True
+         msg.data = np.array(lidar_points).tobytes()
+         self.publisher_.publish(msg)

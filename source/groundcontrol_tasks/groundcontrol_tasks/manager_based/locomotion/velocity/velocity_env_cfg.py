@@ -34,10 +34,6 @@ from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 # ===== GroundControl imports === VVV
 import groundcontrol_tasks.manager_based.locomotion.velocity.mdp as mdp
 
-from isaaclab_ros.assets import VELODYNE_VLP_16_ROS_CFG, REALSENSE_D455_ROS_CFG
-from isaaclab_ros.config import CameraROSCfg, ImuROSCfg
-
-
 ##
 # Scene definition
 ##
@@ -71,51 +67,14 @@ class MySceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = MISSING
     # sensors
     height_scanner = RayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/base",
+        prim_path="{ENV_REGEX_NS}/Robot/base_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
         attach_yaw_only=True,
         pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
-    lidar = VELODYNE_VLP_16_ROS_CFG.replace(sensor_name="lidar",
-                                            message_type="PointCloud2",
-                                            topic_name="lidar/points",
-                                            prim_path="{ENV_REGEX_NS}/Robot/base_link",
-                                            offset=RayCasterCfg.OffsetCfg(pos=(0.147, 0.0, 0.117)),
-                                            # pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
-                                            mesh_prim_paths=["/World/Ground/GQ_Meshes/GraciesQuartersCombinedScaledUp_default1/GraciesQuartersCombinedScaledUp_default1"],
-                                            debug_vis=False)
-    # realsense = REALSENSE_D455_ROS_CFG.replace(sensor_name="camera",
-    #                                 message_type="sensor_msgs/image",
-    #                                 topic_name="image",
-    #                                 prim_path="{ENV_REGEX_NS}/Robot/base_link/realsense",
-    #                                 imu=ImuROSCfg(
-    #                                     prim_path='{ENV_REGEX_NS}/Robot/base_linl/realsense/imu',
-    #                                     sensor_name='realsense/imu',
-    #                                     message_type='sensor_msgs/imu',
-    #                                     topic_name='realsense/imu/data'
-    #                                 ),
-    #                                 offset=CameraCfg.OffsetCfg(pos=(0.2, 0.0, 0.11)),
-    #                                 debug_vis=False)
-    camera = TiledCameraCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/base_link/Camera",
-        # offset=TiledCameraCfg.OffsetCfg(pos=(0.414,0,0), rot=(0.56099,0.43046,-0.43046,-0.56099)), #rot=(0.0,-75.0,-90.0) x, z, w, y
-        offset=TiledCameraCfg.OffsetCfg(pos=(0.414,0,0), 
-                                        rot=(0.37993,-0.59637,0.59637,-0.37993)), #rot=(0.0,-75.0,-90.0) x, z, w, y
-        data_types=["rgb","depth"],
-        spawn=PinholeCameraCfg(
-            clipping_range=(0.1, 20), 
-            focal_length=1.93, 
-            focus_distance=0.5, 
-            horizontal_aperture=3.896, 
-            vertical_aperture=2.453,
-            visible=False,
-        ),
-        width=424,
-        height=240,
-        debug_vis=True,
-    )
+
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
     # lights
     sky_light = AssetBaseCfg(
@@ -176,43 +135,9 @@ class ObservationsCfg:
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
         actions = ObsTerm(func=mdp.last_action)
-        realsense_rgb_image = ObsTerm(
-            func=mdp.image,
-            params={"sensor_cfg": SceneEntityCfg("camera"), "data_type":"rgb"},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-        )
-        realsense_depth_image = ObsTerm(
-            func=mdp.image,
-            params={"sensor_cfg": SceneEntityCfg("camera"), "data_type":"depth"},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-        )
-    # class RosCfg(ObsGroup):
-    #     velodyne = ObsTerm(
-    #         func=mdp.height_scan,
-    #         params={"sensor_cfg": SceneEntityCfg("velodyne")},
-    #         noise=Unoise(n_min=-0.1, n_max=0.1),
-    #         clip=(-1.0, 1.0),
-    #     )
-    # class RosCameraCfg(ObsGroup):
-    #     realsense_rgb_image = ObsTerm(
-    #         func=mdp.image,
-    #         params={"sensor_cfg": SceneEntityCfg("realsense"), "data_type":"rgb"},
-    #         noise=Unoise(n_min=-0.01, n_max=0.01),
-    #     )
-    #     realsense_depth_image = ObsTerm(
-    #         func=mdp.image,
-    #         params={"sensor_cfg": SceneEntityCfg("realsense"), "data_type":"depth"},
-    #         noise=Unoise(n_min=-0.01, n_max=0.01),
-    #     )
-
-        # def __post_init__(self):
-        #     self.enable_corruption = True
-        #     self.concatenate_terms = True
 
     # observation groups
     policy: PolicyCfg = PolicyCfg()
-    # camera: CameraCfg = CameraCfg()
-
 
 @configclass
 class EventCfg:
@@ -235,7 +160,7 @@ class EventCfg:
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "mass_distribution_params": (-5.0, 5.0),
             "operation": "add",
         },
@@ -246,7 +171,7 @@ class EventCfg:
         func=mdp.apply_external_force_torque,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="base"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
             "force_range": (0.0, 0.0),
             "torque_range": (-0.0, 0.0),
         },
@@ -307,7 +232,7 @@ class RewardsCfg:
         func=mdp.feet_air_time,
         weight=0.125,
         params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*foot"),
             "command_name": "base_velocity",
             "threshold": 0.5,
         },
@@ -315,7 +240,7 @@ class RewardsCfg:
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
         weight=-1.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*thigh"), "threshold": 1.0},
     )
     # -- optional penalties
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
@@ -329,7 +254,7 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     base_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base_link"), "threshold": 1.0},
     )
 
 
@@ -375,8 +300,7 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
         # we tick all the sensors based on the smallest update period (physics update period)
         if self.scene.height_scanner is not None:
             self.scene.height_scanner.update_period = self.decimation * self.sim.dt
-        # if self.scene.lidar is not None:
-        #     self.scene.lidar.update_period = self.decimation * self.sim.dt
+
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 

@@ -26,7 +26,7 @@ from groundcontrol_tasks.manager_based.locomotion.velocity.velocity_env_cfg impo
 ##
 # Pre-defined configs
 ##
-from amrl_assets.robots.spot import SPOT_CFG  # isort: skip
+from groundcontrol_assets.spot import SPOT_CFG  # isort: skip
 
 
 COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
@@ -318,7 +318,7 @@ class SpotFlatEnvCfg(LocomotionVelocityRoughEnvCfg):
     curriculum: SpotCurriculumCfg = SpotCurriculumCfg()
 
     # Viewer
-    viewer = ViewerCfg(eye=(10.5, 10.5, 0.3), origin_type="world", env_index=0, asset_name="robot")
+    viewer = ViewerCfg(eye=(10.5, 10.5, 5.0), origin_type="world", env_index=0, asset_name="robot")
 
     def __post_init__(self):
         # post init of parent

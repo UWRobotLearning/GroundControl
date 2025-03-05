@@ -48,7 +48,7 @@ class LidarPublisher(Node):
         ]
         msg.is_bigendian = False
         msg.point_step = 16
-        msg.row_step = 16 * len(lidar_points)
+        msg.row_step = msg.point_step * msg.width
         msg.is_dense = True
         msg.data = np.array(lidar_points).tobytes()
         self.publisher_.publish(msg)
