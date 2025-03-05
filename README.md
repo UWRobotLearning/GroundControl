@@ -13,16 +13,23 @@ cd source
 pip install -e groundcontrol
 pip install -e groundcontrol_assets
 pip install -e groundcontrol_tasks
+pip install -e isaaclab_ros
+
 ```
 
-### Run Teleop Example
+### Run Example GQ Environment
+
+In [text](source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py), update the path to the GQ USD file under:
+```bash
+spawn=sim_utils.UsdFileCfg( ....
+```
+
 ```bash
 # Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
 
 # Download assets
 python scripts/update_assets.py
-python scripts/environments/teleoperation/teleop_se2_agent.py --task Isaac-Navigation-Flat-Spot-Play-v0 --num_envs 1 --teleop_device keyboard
-```
+python scripts/environments/teleoperation/teleop_se2_agent_ROS2.py --task Isaac-Navigation-Flat-Go2-Play-v0 --num_envs 1 
 
 
 
@@ -36,8 +43,8 @@ https://isaac-sim.github.io/IsaacLab/main/source/overview/developer-guide/vs_cod
       "name": "Python: Teleop GroundControl",
       "type": "debugpy",
       "request": "launch",
-      "args" : ["--task", "Isaac-Navigation-Flat-Spot-Play-v0", "--num_envs", "1", "--teleop_device", "keyboard", "--sensitivity", "2"],
-      "program": "${workspaceFolder}/scripts/environments/teleoperation/teleop_se2_agent.py",
+      "args" : ["--task", "Isaac-Navigation-Flat-Go2-Play-v0", "--num_envs", "1"],
+      "program": "${workspaceFolder}/scripts/environments/teleoperation/teleop_se2_agent_ROS2.py",
       "console": "integratedTerminal"
   }
 ```
