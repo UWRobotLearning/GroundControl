@@ -24,7 +24,7 @@ In source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/confi
 spawn=sim_utils.UsdFileCfg( ....
 ```
 
-```bash
+
 # Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
 
 # Download assets
