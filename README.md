@@ -48,3 +48,30 @@ https://isaac-sim.github.io/IsaacLab/main/source/overview/developer-guide/vs_cod
       "console": "integratedTerminal"
   }
 ```
+
+### Go2.usd
+
+The simulated Go2 uses action graphs to publish ROS2 topics needed to interface with the autonomy stack along with a front depth camera topic (not needed to run the basic stack). 
+
+The minimum topics needed to interface with the stack are:
+
+```
+/clock
+/go2/imu/data
+/go2/lidar_points
+/tf
+/tf_static
+```
+
+The front camera topics are:
+
+```
+/go2/realsense_front/color/camera_info
+/go2/realsense_front/color/image_raw
+/go2/realsense_front/depth/image_rect_raw
+```
+
+### Isaaclab_ros
+The isaaclab_ros package is needed to publish a subscriber node to translate cmd_vel from the autonomy stack to base_commands for the simulated Go2.
+
+Currently, there is a bug in the IsaacSim odometry action graph that also requires IsaacLab_ros to publish the odometry node. This will be fixed in a future release.

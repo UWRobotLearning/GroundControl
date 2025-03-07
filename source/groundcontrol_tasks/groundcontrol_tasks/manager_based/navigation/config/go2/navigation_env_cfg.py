@@ -20,7 +20,6 @@ from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
-from groundcontrol import GROUNDCONTROL_EXT_DIR
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.go2.flat_env_cfg import Go2FlatEnvCfg
 
