@@ -24,13 +24,14 @@ In source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/confi
 spawn=sim_utils.UsdFileCfg( ....
 ```
 
+```bash
 
 #Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
 
 #Download assets
 python scripts/update_assets.py
 python scripts/environments/teleoperation/teleop_se2_agent_ROS2.py --task Isaac-Navigation-Flat-Go2-Play-v0 --num_envs 1 
-
+```
 
 
 ### VSCode Debug 
