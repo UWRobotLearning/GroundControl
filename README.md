@@ -19,6 +19,8 @@ pip install -e isaaclab_ros
 
 ### Run Example GQ Environment
 
+Prior to running the simulator, add `"isaacsim.ros2.bridge" = {}` to `IsaacLab/apps/isaaclab.python.kit` under `[dependencies]`.
+
 In source/groundcontrol_tasks/groundcontrol_tasks/manager_based/navigation/config/go2/navigation_env_cfg.py, update the path to the GQ USD file under:
 ```bash
 spawn=sim_utils.UsdFileCfg( ....
