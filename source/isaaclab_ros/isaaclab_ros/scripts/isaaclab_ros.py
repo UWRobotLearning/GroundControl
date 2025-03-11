@@ -38,5 +38,5 @@ class IsaacLabRos(Node):
         self.robot_ang_vel = scene._articulations["robot"]._data.root_ang_vel_b[0]
         
     def publish(self):
-        # pass
-        self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
+        pass
+        # self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)

@@ -31,6 +31,8 @@ spawn=sim_utils.UsdFileCfg( ....
 #Assuming this python is tied to isaac-sim, otherwise see Isaac-Sim / IsaacLab docs:
 
 #Download assets
+
+# Run update assets only if downloading assets via AWS bucket
 python scripts/update_assets.py
 python scripts/environments/teleoperation/teleop_se2_agent_ROS2.py --task Isaac-Navigation-Flat-Go2-Play-v0 --num_envs 1 
 ```
