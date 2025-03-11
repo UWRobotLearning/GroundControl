@@ -165,13 +165,8 @@ def main():
 
             # apply actions
             _, _, _, extras = env.step(base_command)
-<<<<<<< HEAD
             # sensor_obs = extras["observations"]["SensorObs"]
             node.publish()
-=======
-            sensor_obs = extras["observations"]["RosSensorObs"]
-            node.publish(sensor_obs)
->>>>>>> 0d9eb93eef174baba63f06aa0da72f8481ea31f1
     # close the simulator
     env.close()
 

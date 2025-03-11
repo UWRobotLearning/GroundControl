@@ -3,7 +3,7 @@ import numpy as np
 # ROS2 imports
 import rclpy
 from rclpy.node import Node
-import ros2_numpy
+# import ros2_numpy
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan, PointCloud2, PointField
 import tf2_ros as tf2
@@ -48,13 +48,8 @@ class LidarPublisher(Node):
             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1)
         ]
         msg.is_bigendian = False
-<<<<<<< HEAD
         msg.point_step = 16
         msg.row_step = msg.point_step * msg.width
-=======
-        msg.point_step = 12
-        msg.row_step = 12 * len(lidar_points)
->>>>>>> 0d9eb93eef174baba63f06aa0da72f8481ea31f1
         msg.is_dense = True
         # cloud = ros2_numpy.point_cloud2.dict_to_point_cloud2(points, frame_id= "base_link")
         msg.data = np.array(lidar_points).tobytes()

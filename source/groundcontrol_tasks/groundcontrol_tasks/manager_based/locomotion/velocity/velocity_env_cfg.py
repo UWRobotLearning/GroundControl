@@ -34,14 +34,6 @@ from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 # ===== GroundControl imports === VVV
 import groundcontrol_tasks.manager_based.locomotion.velocity.mdp as mdp
 
-<<<<<<< HEAD
-=======
-from isaaclab_ros.assets import VELODYNE_VLP_16_ROS_CFG, REALSENSE_D455_ROS_CFG
-from isaaclab_ros.config import CameraROSCfg, ImuROSCfg
-
-
-
->>>>>>> 0d9eb93eef174baba63f06aa0da72f8481ea31f1
 ##
 # Scene definition
 ##
@@ -73,7 +65,6 @@ class MySceneCfg(InteractiveSceneCfg):
     # robots
     robot: ArticulationCfg = MISSING
     # sensors
-<<<<<<< HEAD
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
@@ -83,26 +74,6 @@ class MySceneCfg(InteractiveSceneCfg):
         mesh_prim_paths=["/World/ground"],
     )
 
-=======
-    lidar = VELODYNE_VLP_16_ROS_CFG.replace(sensor_name="lidar",
-                                            message_type="PointCloud2",
-                                            topic_name="lidar_points",
-                                            prim_path="{ENV_REGEX_NS}/Robot/base_link",
-                                            offset=RayCasterCfg.OffsetCfg(pos=(0.147, 0.0, 0.117)),
-                                            # pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
-                                            mesh_prim_paths=["/World/Ground/GQ_Meshes/GQ_Combined"],
-                                            debug_vis=False)
-    realsense = REALSENSE_D455_ROS_CFG.replace(sensor_name="camera",
-                                               message_type="sensor_msgs/image",
-                                               topic_name="image",
-                                               prim_path="{ENV_REGEX_NS}/Robot/base_link/realsense",
-                                               offset=CameraCfg.OffsetCfg(pos=(0.2, 0.0, 0.11)),
-                                               debug_vis=False)
-    imu = ImuROSCfg(sensor_name="imu",
-                    message_type="sensor_msgs/imu",
-                    topic_name="imu/data",
-                    prim_path="{ENV_REGEX_NS}/Robot/base_link",)
->>>>>>> 0d9eb93eef174baba63f06aa0da72f8481ea31f1
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
     # lights
     sky_light = AssetBaseCfg(
@@ -326,16 +297,9 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.physics_material = self.scene.terrain.physics_material
         # update sensor update periods
         # we tick all the sensors based on the smallest update period (physics update period)
-<<<<<<< HEAD
         if self.scene.height_scanner is not None:
             self.scene.height_scanner.update_period = self.decimation * self.sim.dt
 
-=======
-        # if self.scene.height_scanner is not None:
-        #     self.scene.height_scanner.update_period = self.decimation * self.sim.dt
-        if self.scene.lidar is not None:
-            self.scene.lidar.update_period = self.decimation * self.sim.dt
->>>>>>> 0d9eb93eef174baba63f06aa0da72f8481ea31f1
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
