@@ -193,7 +193,7 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 pos=(0,0,-5)
             ),
             spawn=sim_utils.UsdFileCfg(
-                usd_path="{ISAACLAB_NUCLEUS_DIR}/Environments/Simple_Warehouse/warehouse_with_forklifts.usd",
+                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_lite/GQ_lite_scaled_v2.usd",
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     kinematic_enabled=True,
                 ),

@@ -141,7 +141,7 @@ class Go2EventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
-            "mass_distribution_params": (-2.5, 2.5),
+            "mass_distribution_params": (-0.5, 0.5),
             "operation": "add",
         },
     )
@@ -178,8 +178,8 @@ class Go2EventCfg:
         func=go2_mdp.reset_joints_around_default,
         mode="reset",
         params={
-            "position_range": (-0.2, 0.2),
-            "velocity_range": (-2.5, 2.5),
+            "position_range": (-0.1, 0.1),
+            "velocity_range": (-1.5, 1.5),
             "asset_cfg": SceneEntityCfg("robot"),
         },
     )
@@ -191,7 +191,7 @@ class Go2EventCfg:
         interval_range_s=(10.0, 15.0),
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)},
+            "velocity_range": {"x": (-0.25, 0.25), "y": (-0.25, 0.25)},
         },
     )
 
@@ -337,7 +337,7 @@ class Go2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.decimation = 10  # 50 Hz
         self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 0.002  # 500 Hz
+        self.sim.dt = 0.002  # default 500 Hz
         self.sim.render_interval = self.decimation
         self.sim.disable_contact_processing = True
         self.sim.physics_material.static_friction = 1.0
