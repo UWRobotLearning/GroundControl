@@ -5,7 +5,7 @@
 
 """Common functions that can be used to define rewards for the learning environment.
 
-The functions can be passed to the :class:`isaaclab.managers.RewardTermCfg` object to
+The functions can be passed to the :class:`omni.isaac.lab.managers.RewardTermCfg` object to
 specify the reward function and its parameters.
 """
 
@@ -14,12 +14,12 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import ContactSensor
-from isaaclab.utils.math import quat_rotate_inverse, yaw_quat
+from omni.isaac.lab.managers import SceneEntityCfg
+from omni.isaac.lab.sensors import ContactSensor
+from omni.isaac.lab.utils.math import quat_rotate_inverse, yaw_quat
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedRLEnv
+    from omni.isaac.lab.envs import ManagerBasedRLEnv
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

@@ -6,22 +6,22 @@
 
 import math
 
-from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import EventTermCfg as EventTerm
-from isaaclab.managers import ObservationGroupCfg as ObsGroup
-from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
-from isaaclab.utils import configclass
-from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
-from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
+from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
+from omni.isaac.lab.managers import EventTermCfg as EventTerm
+from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
+from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+from omni.isaac.lab.managers import RewardTermCfg as RewTerm
+from omni.isaac.lab.managers import SceneEntityCfg
+from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.utils import configclass
+from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
+from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
 #from isaaclab.sensors.camera import TiledCameraCfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
-import isaaclab_ros.mdp as ros_mdp
+# import isaaclab_ros.mdp as ros_mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.go2.flat_env_cfg import Go2FlatEnvCfg
 
 LOW_LEVEL_ENV_CFG = Go2FlatEnvCfg()
@@ -184,8 +184,8 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
         # Episode Termination Length
         self.episode_length_s = 20.0
 
-        from isaaclab.assets import AssetBaseCfg
-        import isaaclab.sim as sim_utils
+        from omni.isaac.lab.assets import AssetBaseCfg
+        import omni.isaac.lab.sim as sim_utils
 
         self.scene.terrain = AssetBaseCfg(
             prim_path="/World/Ground",
@@ -193,7 +193,7 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 pos=(0,0,-5)
             ),
             spawn=sim_utils.UsdFileCfg(
-                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_lite/GQ_lite_scaled_v2.usd",
+                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_v2/GQ_lite.usd",
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     kinematic_enabled=True,
                 ),

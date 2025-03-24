@@ -41,7 +41,7 @@ import torch
 from rl_games.common import env_configurations
 from rl_games.common.vecenv import IVecEnv
 
-from isaaclab.envs import DirectRLEnv, ManagerBasedRLEnv, VecEnvObs
+from omni.isaac.lab.envs import DirectRLEnv, ManagerBasedRLEnv, VecEnvObs
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

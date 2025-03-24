@@ -1,5 +1,4 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
-# Copyright (c) 2022-2025, The GroundControl Project Developers.
+# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -7,10 +6,10 @@
 from dataclasses import MISSING
 from typing import Literal
 
-from isaaclab.sim import FisheyeCameraCfg, PinholeCameraCfg
-from isaaclab.utils import configclass
+from omni.isaac.lab.sim import FisheyeCameraCfg, PinholeCameraCfg
+from omni.isaac.lab.utils import configclass
 
-from isaaclab.sensors.sensor_base_cfg import SensorBaseCfg
+from ..sensor_base_cfg import SensorBaseCfg
 from .camera import Camera
 
 

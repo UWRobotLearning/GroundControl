@@ -1,21 +1,40 @@
 [package]
 
 # Note: Semantic Versioning is used: https://semver.org/
-version = "0.2.0"
+version = "0.1.0"
 
 # Description
 title = "Ground Control Assets"
-description="Isaac Lab extension for Ground Autonomy via Robot Learning."
-readme  = "README.md"
+description="Extension containing suite of environments for robot learning."
+readme  = "docs/README.md"
 repository = "https://github.com/UWRobotLearning/GroundControl"
-category = "isaaclab"
+category = "robotics"
 keywords = ["kit", "robotics", "learning", "ai", "ground autonomy"]
 
 [dependencies]
-"groundcontrol" = {}
-"isaaclab" = {}
-"isaaclab_assets" = {}
-"isaaclab_tasks" = {}
+"omni.isaac.lab" = {}
+"omni.isaac.lab_assets" = {}
+
+[python.pipapi]
+requirements = [
+    "h5py",
+    "tensorboard",
+    "stable-baselines3>=2.1",
+    "rl-games==1.6.1",
+    "rsl-rl@git+https://github.com/leggedrobotics/rsl_rl.git",
+    "skrl>=1.2.0"
+]
+
+modules = [
+    "h5py",
+    "tensorboard",
+    "stable_baselines3",
+    "rl_games",
+    "rsl_rl",
+    "skrl"
+]
+
+use_online_index=true
 
 [[python.module]]
-name = "groundcontrol_assets"
+name = "isaaclab.groundcontrol_assets"

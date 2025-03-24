@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from isaaclab.envs import DirectRLEnv, ManagerBasedRLEnv
+from omni.isaac.lab.envs import DirectRLEnv, ManagerBasedRLEnv
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

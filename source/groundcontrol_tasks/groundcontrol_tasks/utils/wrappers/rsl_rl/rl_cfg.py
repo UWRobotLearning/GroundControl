@@ -6,7 +6,7 @@
 from dataclasses import MISSING
 from typing import Literal
 
-from isaaclab.utils import configclass
+from omni.isaac.lab.utils import configclass
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

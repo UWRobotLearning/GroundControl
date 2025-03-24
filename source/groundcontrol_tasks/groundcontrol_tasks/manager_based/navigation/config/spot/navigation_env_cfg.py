@@ -6,16 +6,16 @@
 
 import math
 
-from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import EventTermCfg as EventTerm
-from isaaclab.managers import ObservationGroupCfg as ObsGroup
-from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
-from isaaclab.utils import configclass
-from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
-from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
+from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
+from omni.isaac.lab.managers import EventTermCfg as EventTerm
+from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
+from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+from omni.isaac.lab.managers import RewardTermCfg as RewTerm
+from omni.isaac.lab.managers import SceneEntityCfg
+from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.utils import configclass
+from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
+from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
 #from isaaclab.sensors.camera import TiledCameraCfg
 
 # ===== NOTE:IsaacLab imports === ^^^ 
@@ -187,18 +187,18 @@ class NavigationEnvCfg(SpotFlatEnvCfg):
             self.scene.contact_forces.update_period = self.sim.dt
         # NOTE: for the moment, the camera is added in the post_init of NavigationEnvCfg
         # We can create a MySceneEntityCfg class for the NavigationEnvCfg as well instead
-        self.scene.rgb_camera = TiledCameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
-            update_period=0.0,
-            height=64,
-            width=64,
-            data_types=["rgb"],
-            spawn=PinholeCameraCfg(),
-            offset=TiledCameraCfg.OffsetCfg(
-                pos=(-0.2, 0, 0.2),
-                rot=(0.5, -0.5, 0.5, -0.5),
-            ),
-        )
+        # self.scene.rgb_camera = TiledCameraCfg(
+        #     prim_path="{ENV_REGEX_NS}/Robot/body/base_cam",
+        #     update_period=0.0,
+        #     height=64,
+        #     width=64,
+        #     data_types=["rgb"],
+        #     spawn=PinholeCameraCfg(),
+        #     offset=TiledCameraCfg.OffsetCfg(
+        #         pos=(-0.2, 0, 0.2),
+        #         rot=(0.5, -0.5, 0.5, -0.5),
+        #     ),
+        # )
 
 @configclass
 class NavigationEnvCfg_PLAY(NavigationEnvCfg):
@@ -215,8 +215,8 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
         # Episode Termination Length
         self.episode_length_s = 20.0
 
-        from isaaclab.assets import AssetBaseCfg
-        import isaaclab.sim as sim_utils
+        from omni.isaac.lab.assets import AssetBaseCfg
+        import omni.isaac.lab.sim as sim_utils
 
         self.scene.terrain = AssetBaseCfg(
             prim_path="/World/Ground",
@@ -224,7 +224,7 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 pos=(0,0,-5)
             ),
             spawn=sim_utils.UsdFileCfg(
-                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_lite/GQ_lite_scaled.usd",
+                usd_path="/home/sean/GQ_MAP/Omniverse-GQ-Map/Collected_GQ_v2/GQ_lite.usd",
                 # scale=(0.01, 0.01, 0.01),
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     kinematic_enabled=True,

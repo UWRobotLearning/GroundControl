@@ -1,21 +1,43 @@
 [package]
 
 # Note: Semantic Versioning is used: https://semver.org/
-# Tracks IsaacLab version on Minor
-version = "0.2.0"
+version = "0.0.1"
 
 # Description
 title = "Ground Control"
-description="Isaac Lab extension for Ground Autonomy via Robot Learning."
-readme  = "README.md"
+description="Extension providing main framework interfaces and abstractions for robot learning."
+readme  = "docs/README.md"
 repository = "https://github.com/UWRobotLearning/GroundControl"
-category = "isaaclab"
+category = "robotics"
 keywords = ["kit", "robotics", "learning", "ai", "ground autonomy"]
 
 [dependencies]
-"isaaclab" = {}
-"isaaclab_assets" = {}
-"isaaclab_tasks" = {}
+"omni.isaac.core" = {}
+"omni.isaac.ml_archive" = {}
+"omni.replicator.core" = {}
+
+[python.pipapi]
+requirements = [
+    "numpy",
+    "prettytable==3.3.0",
+    "tensordict",
+    "toml",
+    "hidapi",
+    "gymnasium==0.29.0",
+    "trimesh"
+]
+
+modules = [
+    "numpy",
+    "prettytable",
+    "tensordict",
+    "toml",
+    "hid",
+    "gymnasium",
+    "trimesh"
+]
+
+use_online_index=true
 
 [[python.module]]
-name = "groundcontrol"
+name = "isaaclab.groundcontrol"

@@ -1,36 +1,32 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
-# Copyright (c) 2022-2025, The GroundControl Project Developers.
+# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
+import math
 import numpy as np
 import re
 import torch
 from collections.abc import Sequence
-#from tensordict import TensorDict
+from tensordict import TensorDict
 from typing import TYPE_CHECKING, Any, Literal
 
 import carb
 import omni.kit.commands
 import omni.usd
-from isaacsim.core.prims import XFormPrim
+from omni.isaac.core.prims import XFormPrimView
 from pxr import UsdGeom
 
-import isaaclab.sim as sim_utils
-from isaaclab.utils import to_camel_case
-from isaaclab.utils.array import convert_to_torch
-from isaaclab.utils.math import quat_from_matrix
-from isaaclab.sensors.sensor_base import SensorBase
-from isaaclab.utils.math import convert_camera_frame_orientation_convention as convert_orientation_convention
-from isaaclab.utils.math import create_rotation_matrix_from_view
+import omni.isaac.lab.sim as sim_utils
+from omni.isaac.lab.utils import to_camel_case
+from omni.isaac.lab.utils.array import convert_to_torch
+from omni.isaac.lab.utils.math import quat_from_matrix
 
-# ===== NOTE:IsaacLab imports === ^^^ 
-# ===== GroundControl imports === VVV
-
+from ..sensor_base import SensorBase
 from .camera_data import CameraData
+from .utils import convert_orientation_convention, create_rotation_matrix_from_view
 
 if TYPE_CHECKING:
     from .camera_cfg import CameraCfg
@@ -121,9 +117,6 @@ class Camera(SensorBase):
             rot = torch.tensor(self.cfg.offset.rot, dtype=torch.float32).unsqueeze(0)
             rot_offset = convert_orientation_convention(rot, origin=self.cfg.offset.convention, target="opengl")
             rot_offset = rot_offset.squeeze(0).numpy()
-            # ensure vertical aperture is set, otherwise replace with default for squared pixels
-            if self.cfg.spawn.vertical_aperture is None:
-                self.cfg.spawn.vertical_aperture = self.cfg.spawn.horizontal_aperture * self.cfg.height / self.cfg.width
             # spawn the asset
             self.cfg.spawn.func(
                 self.cfg.prim_path, self.cfg.spawn, translation=self.cfg.offset.pos, orientation=rot_offset
@@ -250,12 +243,6 @@ class Camera(SensorBase):
                 "horizontal_aperture_offset": (c_x - width / 2) / f_x,
                 "vertical_aperture_offset": (c_y - height / 2) / f_y,
             }
-
-            # TODO: Adjust to handle aperture offsets once supported by omniverse
-            #   Internal ticket from rendering team: OM-42611
-            if params["horizontal_aperture_offset"] > 1e-4 or params["vertical_aperture_offset"] > 1e-4:
-                carb.log_warn("Camera aperture offsets are not supported by Omniverse. These parameters are ignored.")
-
             # change data for corresponding camera index
             sensor_prim = self._sensor_prims[i]
             # set parameters for camera
@@ -292,7 +279,7 @@ class Camera(SensorBase):
         - :obj:`"ros"`    - forward axis: +Z - up axis -Y - Offset is applied in the ROS convention
         - :obj:`"world"`  - forward axis: +X - up axis +Z - Offset is applied in the World Frame convention
 
-        See :meth:`isaaclab.sensors.camera.utils.convert_orientation_convention` for more details
+        See :meth:`omni.isaac.lab.sensors.camera.utils.convert_orientation_convention` for more details
         on the conventions.
 
         Args:
@@ -392,7 +379,7 @@ class Camera(SensorBase):
         # Initialize parent class
         super()._initialize_impl()
         # Create a view for the sensor
-        self._view = XFormPrim(self.cfg.prim_path, reset_xform_properties=False)
+        self._view = XFormPrimView(self.cfg.prim_path, reset_xform_properties=False)
         self._view.initialize()
         # Check that sizes are correct
         if self._view.count != self._num_envs:
@@ -535,7 +522,7 @@ class Camera(SensorBase):
         # lazy allocation of data dictionary
         # since the size of the output data is not known in advance, we leave it as None
         # the memory will be allocated when the buffer() function is called for the first time.
-        self._data.output = {}
+        self._data.output = TensorDict({}, batch_size=self._view.count, device=self.device)
         self._data.info = [{name: None for name in self.cfg.data_types} for _ in range(self._view.count)]
 
     def _update_intrinsic_matrices(self, env_ids: Sequence[int]):
@@ -554,21 +541,17 @@ class Camera(SensorBase):
             # get camera parameters
             focal_length = sensor_prim.GetFocalLengthAttr().Get()
             horiz_aperture = sensor_prim.GetHorizontalApertureAttr().Get()
-            vert_aperture = sensor_prim.GetVerticalApertureAttr().Get()
-            horiz_aperture_offset = sensor_prim.GetHorizontalApertureOffsetAttr().Get()
-            vert_aperture_offset = sensor_prim.GetVerticalApertureOffsetAttr().Get()
             # get viewport parameters
             height, width = self.image_shape
-            # extract intrinsic parameters
-            f_x = (width * focal_length) / horiz_aperture
-            f_y = (height * focal_length) / vert_aperture
-            c_x = width * 0.5 + horiz_aperture_offset * f_x
-            c_y = height * 0.5 + vert_aperture_offset * f_y
+            # calculate the field of view
+            fov = 2 * math.atan(horiz_aperture / (2 * focal_length))
+            # calculate the focal length in pixels
+            focal_px = width * 0.5 / math.tan(fov / 2)
             # create intrinsic matrix for depth linear
-            self._data.intrinsic_matrices[i, 0, 0] = f_x
-            self._data.intrinsic_matrices[i, 0, 2] = c_x
-            self._data.intrinsic_matrices[i, 1, 1] = f_y
-            self._data.intrinsic_matrices[i, 1, 2] = c_y
+            self._data.intrinsic_matrices[i, 0, 0] = focal_px
+            self._data.intrinsic_matrices[i, 0, 2] = width * 0.5
+            self._data.intrinsic_matrices[i, 1, 1] = focal_px
+            self._data.intrinsic_matrices[i, 1, 2] = height * 0.5
             self._data.intrinsic_matrices[i, 2, 2] = 1
 
     def _update_poses(self, env_ids: Sequence[int]):

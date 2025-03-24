@@ -10,7 +10,7 @@ import tf2_ros as tf2
 
 # isaaclab imports
 from isaaclab_ros.config import LidarROSCfg
-from isaaclab.managers import SceneEntityCfg
+from omni.isaac.lab.managers import SceneEntityCfg
 
 class LidarPublisher(Node):
     '''

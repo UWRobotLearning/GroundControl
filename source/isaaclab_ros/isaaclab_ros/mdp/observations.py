@@ -5,7 +5,7 @@
 
 """Common functions that can be used to create observation terms.
 
-The functions can be passed to the :class:`isaaclab.managers.ObservationTermCfg` object to enable
+The functions can be passed to the :class:`omni.isaac.lab.managers.ObservationTermCfg` object to enable
 the observation introduced by the function.
 """
 
@@ -14,15 +14,15 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 
-import isaaclab.utils.math as math_utils
-from isaaclab.assets import Articulation, RigidObject
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers.manager_base import ManagerTermBase
-from isaaclab.managers.manager_term_cfg import ObservationTermCfg
-from isaaclab.sensors import Camera, Imu, RayCaster, RayCasterCamera, TiledCamera
+import omni.isaac.lab.utils.math as math_utils
+from omni.isaac.lab.assets import Articulation, RigidObject
+from omni.isaac.lab.managers import SceneEntityCfg
+from omni.isaac.lab.managers.manager_base import ManagerTermBase
+from omni.isaac.lab.managers.manager_term_cfg import ObservationTermCfg
+from omni.isaac.lab.sensors import Camera, Imu, RayCaster, RayCasterCamera, TiledCamera
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv
+    from omni.isaac.lab.envs import ManagerBasedEnv, ManagerBasedRLEnv
 
 
 """

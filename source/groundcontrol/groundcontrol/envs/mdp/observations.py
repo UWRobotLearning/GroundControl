@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from isaaclab.sensors.camera import CameraData
+from omni.isaac.lab.sensors.camera import CameraData
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

@@ -1,0 +1,18 @@
+[package]
+# Semantic Versioning is used: https://semver.org/
+version = "0.2.1"
+
+# Description
+title =  "Isaac Lab ROS"
+description="Wrapper for ROS2 nodes and utilities for Isaac Lab"
+readme  = "docs/README.md"
+repository = "https://github.com/isaac-sim/IsaacLab"
+category = "robotics"
+keywords = ["kit", "robotics", "assets", "isaaclab"]
+
+[dependencies]
+"isaaclab" = {}
+
+# Main python module this extension provides.
+[[python.module]]
+name = "isaaclab_ros"

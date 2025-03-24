@@ -1,0 +1,22 @@
+[package]
+
+# Note: Semantic Versioning is used: https://semver.org/
+version = "0.2.0"
+
+# Description
+title = "Ground Control Environments"
+description="Isaac Lab extension for Ground Autonomy via Robot Learning."
+readme  = "README.md"
+repository = "https://github.com/UWRobotLearning/GroundControl"
+category = "isaaclab"
+keywords = ["kit", "robotics", "learning", "ai", "ground autonomy"]
+
+[dependencies]
+"groundcontrol" = {}
+"groundcontrol_assets" = {}
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_tasks" = {}
+
+[[python.module]]
+name = "groundcontrol_tasks"

@@ -6,9 +6,9 @@
 """Configuration for the lidar sensor."""
 
 from dataclasses import MISSING
-from isaaclab.utils import configclass
+from omni.isaac.lab.utils import configclass
 
-from isaaclab.sensors.imu import ImuCfg
+from omni.isaac.lab.sensors.imu import ImuCfg
 
 @configclass
 class ImuROSCfg(ImuCfg):

@@ -10,7 +10,7 @@ This file is a copy from IsaacLab and is here
 to serve as an example sensor set up.
 """
 
-from isaaclab.sim.spawners.sensors import PinholeCameraCfg
+from omni.isaac.lab.sim.spawners.sensors import PinholeCameraCfg
 from isaaclab_ros.config import CameraROSCfg, ImuROSCfg
 
 ##

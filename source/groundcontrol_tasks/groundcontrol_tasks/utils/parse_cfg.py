@@ -13,8 +13,8 @@ import os
 import re
 import yaml
 
-from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.utils import update_class_from_dict, update_dict
+from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
+from omni.isaac.lab.utils import update_class_from_dict, update_dict
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

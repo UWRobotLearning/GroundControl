@@ -16,10 +16,10 @@ try:
 except ImportError:
     raise ImportError("Hydra is not installed. Please install it by running 'pip install hydra-core'.")
 
-from isaaclab.envs import DirectRLEnvCfg, ManagerBasedRLEnvCfg
-from isaaclab.utils import replace_slices_with_strings, replace_strings_with_slices
+from omni.isaac.lab.envs import DirectRLEnvCfg, ManagerBasedRLEnvCfg
+from omni.isaac.lab.utils import replace_slices_with_strings, replace_strings_with_slices
 
-from isaaclab_tasks.utils.parse_cfg import load_cfg_from_registry
+from omni.isaac.lab_tasks.utils.parse_cfg import load_cfg_from_registry
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

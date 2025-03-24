@@ -11,7 +11,7 @@ to serve as an example sensor set up.
 """
 
 
-from isaaclab.sensors import patterns
+from omni.isaac.lab.sensors import patterns
 from isaaclab_ros.config import LidarROSCfg
 
 ##

@@ -5,7 +5,7 @@
 
 """Common functions that can be used to create curriculum for the learning environment.
 
-The functions can be passed to the :class:`isaaclab.managers.CurriculumTermCfg` object to enable
+The functions can be passed to the :class:`omni.isaac.lab.managers.CurriculumTermCfg` object to enable
 the curriculum introduced by the function.
 """
 
@@ -15,12 +15,12 @@ import torch
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from isaaclab.assets import Articulation
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.terrains import TerrainImporter
+from omni.isaac.lab.assets import Articulation
+from omni.isaac.lab.managers import SceneEntityCfg
+from omni.isaac.lab.terrains import TerrainImporter
 
 if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedRLEnv
+    from omni.isaac.lab.envs import ManagerBasedRLEnv
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV

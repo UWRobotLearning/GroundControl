@@ -13,12 +13,17 @@ The following configuration parameters are available:
 
 import torch
 
+#get file path to import robot
+import os
+full_path = os.path.realpath(__file__)
+usd_dir = os.path.dirname(full_path)
+
 # Note: These are imported from Isaac Lab, not GroundControl. If you customize them, ensure you are importing
 # from the child (GroundControl)
-import isaaclab.sim as sim_utils
-from isaaclab.actuators import DelayedPDActuatorCfg, RemotizedPDActuatorCfg
-from isaaclab.assets.articulation import ArticulationCfg
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+import omni.isaac.lab.sim as sim_utils
+from omni.isaac.lab.actuators import DelayedPDActuatorCfg, RemotizedPDActuatorCfg
+from omni.isaac.lab.assets.articulation import ArticulationCfg
+from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
 
@@ -140,6 +145,7 @@ and the output torque (N*m). It is used to interpolate the output torque based o
 SPOT_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/BostonDynamics/spot/spot.usd",
+        # usd_path=f"{usd_dir}/usd/spot_v2.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,

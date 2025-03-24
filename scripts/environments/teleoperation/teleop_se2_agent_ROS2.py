@@ -10,7 +10,7 @@
 
 import argparse
 
-from isaaclab.app import AppLauncher
+from omni.isaac.lab.app import AppLauncher
 
 import rclpy
 from rclpy.node import Node
@@ -39,15 +39,15 @@ simulation_app = app_launcher.app
 
 import gymnasium as gym
 import torch
-
+import omni
 import carb
 
-from isaaclab_tasks.utils import parse_env_cfg
-from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
+from omni.isaac.lab_tasks.utils import parse_env_cfg
+from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import RslRlVecEnvWrapper
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
-from groundcontrol.devices import Se2Gamepad, Se2Keyboard, Se2SpaceMouse
+# from groundcontrol.devices import Se2Gamepad, Se2Keyboard, Se2SpaceMouse
 import groundcontrol_tasks  # noqa: F401
 
 # enable ROS2 bridge extension
@@ -55,13 +55,13 @@ import omni.kit.app
 ext_manager = omni.kit.app.get_app().get_extension_manager()
 ext_manager.set_extension_enabled_immediate("isaacsim.ros2.bridge", True)
 
-import omni.kit.app
-ext_manager = omni.kit.app.get_app().get_extension_manager()
-ext_manager.set_extension_enabled_immediate("isaacsim.util.merge_mesh", True)
+# import omni.kit.app
+# ext_manager = omni.kit.app.get_app().get_extension_manager()
+# ext_manager.set_extension_enabled_immediate("isaacsim.util.merge_mesh", True)
 
 import omni.usd
-import isaacsim.core.utils.prims as prim_utils
-from isaacsim.util.merge_mesh import MeshMerger
+import omni.isaac.core.utils.prims as prim_utils
+# from isaacsim.util.merge_mesh import MeshMerger
 
 from isaaclab_ros import IsaacLabRos, IsaacLabRosCfg
 
@@ -98,32 +98,32 @@ def main():
         )
 
     # create controller
-    if args_cli.teleop_device.lower() == "keyboard":
-        teleop_interface = Se2Keyboard(
-            v_x_sensitivity=args_cli.sensitivity,
-            v_y_sensitivity=args_cli.sensitivity,
-            omega_z_sensitivity=args_cli.sensitivity,
-        )
-    elif args_cli.teleop_device.lower() == "spacemouse":
-        teleop_interface = Se2SpaceMouse(
-            pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.005 * args_cli.sensitivity
-        )
-    elif args_cli.teleop_device.lower() == "gamepad":
-        teleop_interface = Se2Gamepad(
-            v_x_sensitivity=args_cli.sensitivity,
-            v_y_sensitivity=args_cli.sensitivity,
-            omega_z_sensitivity=args_cli.sensitivity,
-        )
-    else:
-        raise ValueError(f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse', gamepad.")
-    # add teleoperation key for env reset
-    teleop_interface.add_callback("L", env.reset)
-    # print helper for keyboard
-    print(teleop_interface)
+    # if args_cli.teleop_device.lower() == "keyboard":
+    #     teleop_interface = Se2Keyboard(
+    #         v_x_sensitivity=args_cli.sensitivity,
+    #         v_y_sensitivity=args_cli.sensitivity,
+    #         omega_z_sensitivity=args_cli.sensitivity,
+    #     )
+    # elif args_cli.teleop_device.lower() == "spacemouse":
+    #     teleop_interface = Se2SpaceMouse(
+    #         pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.005 * args_cli.sensitivity
+    #     )
+    # elif args_cli.teleop_device.lower() == "gamepad":
+    #     teleop_interface = Se2Gamepad(
+    #         v_x_sensitivity=args_cli.sensitivity,
+    #         v_y_sensitivity=args_cli.sensitivity,
+    #         omega_z_sensitivity=args_cli.sensitivity,
+    #     )
+    # else:
+    #     raise ValueError(f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse', gamepad.")
+    # # add teleoperation key for env reset
+    # teleop_interface.add_callback("L", env.reset)
+    # # print helper for keyboard
+    # print(teleop_interface)
 
-    # reset environment
-    env.reset()
-    teleop_interface.reset()
+    # # reset environment
+    # env.reset()
+    # teleop_interface.reset()
 
     # base_command = torch.zeros(3)
     # add_cmd_sub()

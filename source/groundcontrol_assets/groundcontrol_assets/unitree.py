@@ -18,12 +18,14 @@ The following configurations are available:
 Reference: https://github.com/unitreerobotics/unitree_ros
 """
 
-import isaaclab.sim as sim_utils
-from isaaclab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActuatorCfg
-from isaaclab.assets.articulation import ArticulationCfg
-from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
-from os import getcwd
-
+import omni.isaac.lab.sim as sim_utils
+from omni.isaac.lab.actuators import ActuatorNetMLPCfg, DCMotorCfg, ImplicitActuatorCfg
+from omni.isaac.lab.assets.articulation import ArticulationCfg
+from omni.isaac.lab.utils.assets import ISAACLAB_NUCLEUS_DIR
+#get file path to import robot
+import os
+full_path = os.path.realpath(__file__)
+usd_dir = os.path.dirname(full_path)
 ##
 # Configuration - Actuators.
 ##
@@ -138,7 +140,7 @@ UNITREE_GO1_CFG = ArticulationCfg(
 
 UNITREE_GO2_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{getcwd()}/source/groundcontrol_assets/groundcontrol_assets/usd/go2.usd",
+        usd_path=f"{usd_dir}/usd/go2.usd",
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
