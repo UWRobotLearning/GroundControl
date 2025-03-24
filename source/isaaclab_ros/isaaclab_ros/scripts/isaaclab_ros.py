@@ -23,9 +23,9 @@ class IsaacLabRos(Node):
         # Create subscriber to cmd_vel
         self.create_subscription(Twist, 'go2/cmd_vel', self.cmd_vel_cb, 10)
 
-        self.image_pub = ImagePublisher(ns=ns)
-        self.imu_pub = ImuPublisher(ns=ns)
-        self.odom_pub = OdomPublisher(ns=ns)
+        # self.image_pub = ImagePublisher(ns=ns)
+        # self.imu_pub = ImuPublisher(ns=ns)
+        # self.odom_pub = OdomPublisher(ns=ns)
     
     def cmd_vel_cb(self, msg):
         """Callback function that updates base_command when a new Twist message is received."""
@@ -38,5 +38,5 @@ class IsaacLabRos(Node):
         self.robot_ang_vel = scene._articulations["robot"]._data.root_ang_vel_b[0]
         
     def publish(self):
-        # pass
-        self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
+        pass
+        # self.odom_pub.publish_odom(self.robot_position, self.robot_orientation, self.robot_lin_vel, self.robot_ang_vel)
