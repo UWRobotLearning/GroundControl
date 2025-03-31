@@ -16,7 +16,7 @@ class BarrelTestScenarioCfg:
         self.scene.barrel = AssetBaseCfg(
             prim_path="/World/Barrel",
             init_state=AssetBaseCfg.InitialStateCfg(
-                pos=(8,-8,3)
+                pos=(1,-1,3)
             ),
             spawn=sim_utils.UsdFileCfg(
                 usd_path=f"{GROUNDCONTROL_ASSETS_DATA_DIR}/Props/o3dyn_pallet.usd",
