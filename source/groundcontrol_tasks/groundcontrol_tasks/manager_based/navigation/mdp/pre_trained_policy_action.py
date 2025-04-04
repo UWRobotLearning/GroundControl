@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from huggingface_hub import hf_hub_download
 from dataclasses import MISSING
 
 import isaaclab.utils.math as math_utils
@@ -24,6 +23,7 @@ if TYPE_CHECKING:
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
+from huggingface_hub import hf_hub_download
 
 class PreTrainedPolicyAction(ActionTerm):
     r"""Pre-trained policy action term.
