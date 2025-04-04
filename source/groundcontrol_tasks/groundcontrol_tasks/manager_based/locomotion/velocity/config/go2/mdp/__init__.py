@@ -4,8 +4,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-##
-# Configuration for different assets.
-##
-from .spot import *
-from .unitree import *
+
+"""This sub-module contains the functions that are specific to the Spot->Go2 locomotion task."""
+
+from .events import *  # noqa: F401, F403
+from .rewards import *  # noqa: F401, F403
