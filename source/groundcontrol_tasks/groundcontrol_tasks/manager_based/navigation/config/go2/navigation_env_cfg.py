@@ -6,6 +6,8 @@
 
 import math
 
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -219,9 +221,6 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
 
         # Episode Termination Length
         self.episode_length_s = 20.0
-
-        from isaaclab.assets import AssetBaseCfg
-        import isaaclab.sim as sim_utils
 
         self.scene.terrain = AssetBaseCfg(
             prim_path="/World/Ground",
