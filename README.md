@@ -13,6 +13,7 @@ cd source
 pip install -e groundcontrol
 pip install -e groundcontrol_assets
 pip install -e groundcontrol_tasks
+pip install -e groundcontrol_scenarios
 ```
 
 ### Run Teleop Example
