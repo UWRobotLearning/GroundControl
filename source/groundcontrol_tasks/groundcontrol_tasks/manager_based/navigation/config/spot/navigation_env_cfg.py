@@ -6,6 +6,8 @@
 
 import math
 
+import isaaclab.sim as sim_utils
+from isaaclab.assets import AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -17,9 +19,6 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAACLAB_NUCLEUS_DIR
 from isaaclab.sensors.camera.camera_cfg import PinholeCameraCfg
 #from isaaclab.sensors.camera import TiledCameraCfg
-from isaaclab.assets import AssetBaseCfg
-import isaaclab.sim as sim_utils
-
 
 # ===== NOTE:IsaacLab imports === ^^^ 
 # ===== GroundControl imports === VVV
@@ -28,7 +27,6 @@ from groundcontrol_assets.worlds.gracesquarters import is_missing_world_USD_file
 import groundcontrol_tasks.manager_based.navigation.mdp as mdp
 from groundcontrol_tasks.manager_based.locomotion.velocity.config.spot.flat_env_cfg import SpotFlatEnvCfg
 from groundcontrol.sensors.camera import TiledCameraCfg #TODO: migrate to IsaacLab cameras when ready
-from groundcontrol_scenarios.barrel_test import BarrelTestScenarioCfg
 
 LOW_LEVEL_ENV_CFG = SpotFlatEnvCfg()
 
@@ -93,7 +91,6 @@ class ObservationsCfg:
         # TODO: add more cameras later
         # TODO: note that cameras are not within HighLevelPolicyCfg, this is because the policy does not depend on camera atm 
         # TODO: these cameras do not need to be in the ObservationCfg for them to be accessed in the GUI, the only need to be in self.scene
-
     # observation groups
     policy: HighlevelPolicyCfg = HighlevelPolicyCfg()
     perception: PerceptionCfg = PerceptionCfg()
@@ -130,7 +127,7 @@ class CommandsCfg:
         asset_name="robot",
         simple_heading=False,
         resampling_time_range=(8.0, 8.0),
-        debug_vis=True,
+        debug_vis=False,
         ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(-3.0, 3.0), pos_y=(-3.0, 3.0), heading=(-math.pi, math.pi)),
     )
 
@@ -139,7 +136,7 @@ class CommandsCfg:
         asset_name="robot",
         simple_heading=False,
         resampling_time_range=(1000.0, 1000.0),
-        debug_vis=True,
+        debug_vis=False,
         ranges=mdp.UniformPose2dCommandCfg.Ranges(pos_x=(5.0, 5.0), pos_y=(-5.0, -5.0), heading=(math.pi, math.pi)),
     )
 
@@ -209,18 +206,13 @@ class NavigationEnvCfg(SpotFlatEnvCfg):
 @configclass
 class NavigationEnvCfg_PLAY(NavigationEnvCfg):
     def __post_init__(self) -> None:
+        # post init of parent
+        super().__post_init__()
 
         if is_missing_world_USD_file():
             raise FileNotFoundError(
                 "World USD file is missing. Please run 'python scripts/update_assets' to download the file."
             )
-
-        # post init of parent
-        super().__post_init__()
-
-        # set debug in aciton policy to false
-        self.actions.pre_trained_policy_action.debug_vis = False
-
         # make a smaller scene for play
         self.scene.num_envs = 50
         self.scene.env_spacing = 2.5
@@ -244,6 +236,3 @@ class NavigationEnvCfg_PLAY(NavigationEnvCfg):
                 # collision_props=sim_utils.CollisionPropertiesCfg()
             ),
         )
-
-        self.scene.barrel = BarrelTestScenarioCfg().scene.barrel
-    

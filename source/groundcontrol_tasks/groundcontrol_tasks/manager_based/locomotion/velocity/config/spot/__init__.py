@@ -1,5 +1,5 @@
-# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
-# Copyright (c) 2024-, The Ground Control Project Developers.
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2025, The Ground Control Project Developers.
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -13,7 +13,7 @@ from . import agents, flat_env_cfg
 ##
 
 gym.register(
-    id="Isaac-Velocity-Flat-Spot-v0",
+    id="GC-Velocity-Flat-Spot-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
@@ -23,7 +23,7 @@ gym.register(
 )
 
 gym.register(
-    id="Isaac-Velocity-Flat-Spot-Play-v0",
+    id="GC-Velocity-Flat-Spot-Play-v0",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
